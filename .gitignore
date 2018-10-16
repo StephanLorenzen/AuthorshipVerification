@@ -1,0 +1,5 @@
+data/macom/*
+data/PAN13/train/*
+data/PAN13/test/*
+data/PAN13/transform.py
+store/*
