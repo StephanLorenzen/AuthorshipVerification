@@ -1,5 +1,9 @@
-data/macom/*
-data/PAN13/train/*
-data/PAN13/test/*
-data/PAN13/transform.py
+data/MaCom/*
+data/PAN13/processed/*
+data/PAN13/raw/train/*
+data/PAN13/raw/test/*
+data/PAN13/raw/transform.py
 store/*
+
+__pycache__
+*.pyc
