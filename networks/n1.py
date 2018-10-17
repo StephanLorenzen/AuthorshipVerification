@@ -60,7 +60,7 @@ def model(profile):
         
     output = L.Dense(2, activation='softmax', name='output')(dist)
 
-    model = Model(inputs=inls, outputs=[output])
+    model = Model(inputs=inls, outputs=[output], name='n1')
 
     optimizer = O.Adam(lr=profile["lr"])
 
