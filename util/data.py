@@ -1,5 +1,6 @@
 import random
 from io import open
+import numpy as np
 
 from util.profiles import PROFILES
 
@@ -13,7 +14,7 @@ def load_data(datafile, dataset="MaCom"):
             uid = l[0]
             txt = l[1]
             if uid not in res:
-                res[uid] = [[], [], []]
+                res[uid] = [[],[],[]]
             res[uid][0].append(txt)
 
     with open(path+datafile+"_words.csv", 'r', encoding="utf8") as fwrd:
@@ -30,6 +31,9 @@ def load_data(datafile, dataset="MaCom"):
             pos = l[1].split(' ')
             res[uid][2].append(pos)
     
+    for auth,[c,w,p] in res.items():
+        res[auth] = list(zip(c,w,p))
+    
     return res
 
 def generate_stats(datafile, dataset="MaCom"):
@@ -37,11 +41,10 @@ def generate_stats(datafile, dataset="MaCom"):
     profile = PROFILES[dataset]
     text = ""
     words = []
-    for _,d in data.items():
-        for txt in d[0]:
+    for _,authdata in data.items():
+        for txt,wrd,pos in authdata:
             text += txt
-        for wls in d[1]:
-            words += wls
+            words += wrd
     data = None
 
     cmap = dict()
@@ -87,7 +90,8 @@ def load_stats(dataset="MaCom"):
             wmap[l[0]] = i+1
     return cmap, wmap
 
-def prepare_text(txt, wrds, pos, cmap, wmap, profile):
+def prepare_text(data, cmap, wmap, profile):
+    txt, wrds, pos = data
     chars = []
     words = []
     for c in txt:
@@ -104,47 +108,50 @@ def prepare_text(txt, wrds, pos, cmap, wmap, profile):
 
 
 
-def get_siamese_set(datafile, dataset="MaCom"):
+def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
     profile = PROFILES[dataset]
     authors = list(load_data(datafile, dataset).items())
     authors_processed = []
 
     cmap, wmap = load_stats(dataset)
-
-    for (uid, data) in authors:
-        texts = data[0]
-        words = data[1]
-        pos   = data[2]
     
-        texts_processed = []
-        words_processed = []
-        pos_processed   = []
-        for txt, wrds, tags in zip(texts,words,pos):
-            (txtp, wrdsp, tagsp) = prepare_text(txt, wrds, tags, cmap, wmap, profile)
-            texts_processed.append(txtp)
-            words_processed.append(wrdsp)
-            pos_processed.append(tagsp)
+    for (uid, data) in authors:
+        processed = []
+        for d in data:
+            dproc = prepare_text(d, cmap, wmap, profile)
+            processed.append(dproc)
 
-        authors_processed.append((uid, [texts_processed, words_processed, pos_processed]))
+        authors_processed.append((uid, processed))
 
     authors = None
     
     dataset = []
     for aidx, (author, data) in enumerate(authors_processed):
-        for i in range(len(data[0])):
-            for j in range(i+1,len(data[0])):
-                dataset.append(((data[0][i], data[1][i]), (data[0][j],data[1][j]), 1))
+        for i in range(len(data)):
+            for j in range(i+1,len(data)):
+                d1 = data[i]
+                d2 = data[j]
+                dataset.append(((d1[0], d1[1]), (d2[0],d2[1]), 1))
         
                 gw = aidx
                 while gw == aidx:
                     gw = random.randint(0, len(authors_processed)-1)
-                baddat = authors_processed[gw][1]
-                godtxt = random.randint(0, len(data)-1)
-                badtxt = random.randint(0, len(baddat)-1)
-                dataset.append(((data[0][godtxt], data[1][godtxt]), (baddat[0][badtxt], baddat[1][badtxt]), 0))
+                baddata = authors_processed[gw][1]
+                godd = data[random.randint(0, len(data)-1)]
+                badd = baddata[random.randint(0, len(baddata)-1)]
+                dataset.append(((godd[0], godd[1]), (badd[0], badd[1]), 0))
 
     random.shuffle(dataset)
+    
+    if formatinput:
+        inp = dict()
+        inp['known_char_in'] = np.array([x[0][0] for x in dataset])
+        inp['known_word_in'] = np.array([x[0][1] for x in dataset])
+        inp['unknown_char_in'] = np.array([x[1][0] for x in dataset])
+        inp['unknown_word_in'] = np.array([x[1][1] for x in dataset])
+        out = {'output':np.array([[1,0] if x[2] else [0,1] for x in dataset])}
+        return inp, out
 
-    return [(x[0], x[1]) for x in dataset], [[1,0] if x[2] else [0,1] for x in dataset]
+    return dataset
     
 
