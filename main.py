@@ -8,6 +8,7 @@ from io import open
 import util.data as avdata
 from util.profiles import PROFILES
 import networks.n1 as n1
+import networks.n2 as n2
 
 class MyCallback(Callback):
     def __init__(self, dataset):
@@ -20,12 +21,12 @@ class MyCallback(Callback):
         
         lpath = "store/"+self.dataset+"/"+self.model.name+"-log.txt"
         if epoch == 0:
-            with open(lpath, 'w') as log:
-                log.write("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n")
+            with open(lpath, 'w', encoding="utf8") as log:
+                log.write(unicode("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n"))
         
         if logs is not None:
-            with open(lpath, 'a') as logfile:
-                logfile.write(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n")
+            with open(lpath, 'a', encoding="utf8") as logfile:
+                logfile.write(unicode(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n"))
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     inp,out = avdata.get_siamese_set(datafile, dataset)
@@ -33,7 +34,7 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     
     profile = PROFILES[dataset]
 
-    model = n1.model(profile)
+    model = n2.model(profile)
 
     vdata = None
     if valdatafile is not None:
@@ -46,4 +47,5 @@ def test(datafile, dataset="MaCom"):
 
 
 
-train("B","H")
+train("train","test","PAN13")
+

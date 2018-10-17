@@ -41,10 +41,12 @@ def generate_stats(datafile, dataset="MaCom"):
     profile = PROFILES[dataset]
     text = ""
     words = []
+    poss = []
     for _,authdata in data.items():
         for txt,wrd,pos in authdata:
             text += txt
             words += wrd
+            poss += pos
     data = None
 
     cmap = dict()
@@ -52,14 +54,18 @@ def generate_stats(datafile, dataset="MaCom"):
         if c not in cmap:
             cmap[c] = 0
         cmap[c] += 1
-    text = None
 
     wmap = dict()
     for w in words:
         if w not in wmap:
             wmap[w] = 0
         wmap[w] += 1
-    words = None
+    
+    pmap = dict()
+    for p in poss:
+        if p not in pmap:
+            pmap[p] = 0
+        pmap[p] += 1
 
     cmap = list(cmap.items())
     cmap.sort(key=lambda x:-x[1])
@@ -68,6 +74,10 @@ def generate_stats(datafile, dataset="MaCom"):
     wmap = list(wmap.items())
     wmap.sort(key=lambda x:-x[1])
     wmap = wmap[:profile["word_map_size"]-1]
+    
+    pmap = list(pmap.items())
+    pmap.sort(key=lambda x:-x[1])
+    pmap = pmap[:profile["pos_map_size"]-1]
 
     path = "data/"+dataset+"/processed/"
     with open(path+'cmap.txt', 'w', encoding="utf8") as f:
@@ -76,9 +86,12 @@ def generate_stats(datafile, dataset="MaCom"):
     with open(path+'wmap.txt', 'w', encoding="utf8") as f:
         for w in wmap:
             f.write(str(w[0])+";"+str(w[1])+"\n")
+    with open(path+'pmap.txt', 'w', encoding="utf8") as f:
+        for p in pmap:
+            f.write(str(p[0])+";"+str(p[1])+"\n")
 
 def load_stats(dataset="MaCom"):
-    cmap, wmap = dict(), dict()
+    cmap, wmap, pmap = dict(), dict(), dict()
     path = "data/"+dataset+"/processed/"
     with open(path+'cmap.txt', 'r', encoding="utf8") as f:
         for i,l in enumerate(f):
@@ -88,37 +101,47 @@ def load_stats(dataset="MaCom"):
         for i,l in enumerate(f):
             l = l.split(";")
             wmap[l[0]] = i+1
-    return cmap, wmap
+    with open(path+'pmap.txt', 'w', encoding="utf8") as f:
+        for p in pmap:
+            f.write(str(p[0])+";"+str(p[1])+"\n")
+    return cmap, wmap, pmap
 
-def prepare_text(data, cmap, wmap, profile):
+def prepare_text(data, cmap, wmap, pmap, profile):
     txt, wrds, pos = data
     chars = []
     words = []
+    poss  = []
+    # Chars
     for c in txt:
         chars.append(cmap.get(c, 0))
     chars = chars[:10000]
     while len(chars) < 10000:
         chars.append(0)
+    # Words
     for w in wrds:
         words.append(wmap.get(w, 0))
     words = words[:3000]
     while len(words) < 3000:
         words.append(0)
-    return chars, words, []
-
-
+    # POS tags
+    for p in pos:
+        poss.append(pmap.get(p, 0))
+    poss = poss[:3000]
+    while len(poss) < 3000:
+        poss.append(0)
+    return chars, words, poss
 
 def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
     profile = PROFILES[dataset]
     authors = list(load_data(datafile, dataset).items())
     authors_processed = []
 
-    cmap, wmap = load_stats(dataset)
+    cmap, wmap, pmap = load_stats(dataset)
     
     for (uid, data) in authors:
         processed = []
         for d in data:
-            dproc = prepare_text(d, cmap, wmap, profile)
+            dproc = prepare_text(d, cmap, wmap, pmap, profile)
             processed.append(dproc)
 
         authors_processed.append((uid, processed))
@@ -131,7 +154,7 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
             for j in range(i+1,len(data)):
                 d1 = data[i]
                 d2 = data[j]
-                dataset.append(((d1[0], d1[1]), (d2[0],d2[1]), 1))
+                dataset.append((tuple(d1), tuple(d2), 1))
         
                 gw = aidx
                 while gw == aidx:
@@ -139,7 +162,7 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
                 baddata = authors_processed[gw][1]
                 godd = data[random.randint(0, len(data)-1)]
                 badd = baddata[random.randint(0, len(baddata)-1)]
-                dataset.append(((godd[0], godd[1]), (badd[0], badd[1]), 0))
+                dataset.append((tuple(godd), tuple(badd), 0))
 
     random.shuffle(dataset)
     
@@ -147,8 +170,10 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
         inp = dict()
         inp['known_char_in'] = np.array([x[0][0] for x in dataset])
         inp['known_word_in'] = np.array([x[0][1] for x in dataset])
+        inp['known_pos_in']  = np.array([x[0][2] for x in dataset])
         inp['unknown_char_in'] = np.array([x[1][0] for x in dataset])
         inp['unknown_word_in'] = np.array([x[1][1] for x in dataset])
+        inp['unknown_pos_in']  = np.array([x[1][2] for x in dataset])
         out = {'output':np.array([[1,0] if x[2] else [0,1] for x in dataset])}
         return inp, out
 
