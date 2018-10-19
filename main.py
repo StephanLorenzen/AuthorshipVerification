@@ -22,11 +22,11 @@ class MyCallback(Callback):
         lpath = "store/"+self.dataset+"/"+self.model.name+"-log.txt"
         if epoch == 0:
             with open(lpath, 'w', encoding="utf8") as log:
-                log.write(unicode("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n"))
+                log.write(("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n"))
         
         if logs is not None:
             with open(lpath, 'a', encoding="utf8") as logfile:
-                logfile.write(unicode(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n"))
+                logfile.write((str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n"))
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     inp,out = avdata.get_siamese_set(datafile, dataset)
@@ -34,18 +34,20 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     
     profile = PROFILES[dataset]
 
-    model = n2.model(profile)
+    model = n1.model(profile)
+
+    print(model.summary())
 
     vdata = None
     if valdatafile is not None:
         vdata = avdata.get_siamese_set(valdatafile, dataset)
     
-    model.fit(inp, out, validation_data=vdata, epochs=20, verbose=1, callbacks=[MyCallback(dataset)])
+    model.fit(inp, out, validation_data=vdata, epochs=40, verbose=1, callbacks=[MyCallback(dataset)])
     
 def test(datafile, dataset="MaCom"):
     pass
 
 
 
-train("train","test","PAN13")
+train("H","I")
 

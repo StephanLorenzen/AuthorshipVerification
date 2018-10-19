@@ -5,7 +5,7 @@ PROFILES = {
             "pos_map_size": 17,
             "text_max_length": 2000,
             "word_max_length": 600,
-            "lr": 0.05
+            "lr": 0.01
             },
         "MaCom":{
             "char_map_size": 100,
