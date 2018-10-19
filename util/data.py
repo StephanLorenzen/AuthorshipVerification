@@ -1,8 +1,94 @@
 import random
 from io import open
 import numpy as np
+import keras
 
 from util.profiles import PROFILES
+
+
+class DataGenerator(keras.utils.Sequence):
+    
+    def __init__(self, ids, data, batch_size=32, channels=('char', 'word', 'pos'), shuffle=True):
+        #self.dim = dim
+        self.batch_size = batch_size
+        self.data = data
+        self.ids = ids 
+        self.channels = channels
+        self.shuffle = shuffle
+        self.on_epoch_end()
+
+    def __len__(self):
+        return int(np.floor(len(self.ids) / self.batch_size))
+
+    def __getitem__(self, index):
+        # Generate indexes of the batch
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+
+        # Find list of IDs
+        temp = [self.ids[k] for k in indexes]
+
+        # Generate data
+        X, y = self.__data_generation(temp)
+
+        return X, y
+
+    def on_epoch_end(self):
+        self.indexes = np.arange(len(self.ids))
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def __data_generation(self, ids):
+        cc = 'char' in self.channels
+        wc = 'word' in self.channels
+        pc = 'pos' in self.channels
+
+        if cc:
+            kcc = np.empty((self.batch_size, 10000))
+            ucc = np.empty((self.batch_size, 10000))
+
+        if wc:
+            uwc = np.empty((self.batch_size, 3000)) 
+            kwc = np.empty((self.batch_size, 3000)) 
+        
+        if pc:
+            upc = np.empty((self.batch_size, 3000)) 
+            kpc = np.empty((self.batch_size, 3000)) 
+
+        #import pdb; pdb.set_trace()
+
+        for i, ((i,j), label) in enumerate(ids):
+            ai,(kchar, kword, kpos) = self.data[i]
+            aj,(uchar, uword, upos) = self.data[j]
+            
+            if cc:
+                kcc[i,] = kchar
+                ucc[i,] = uchar
+            
+            if wc:
+                kwc[i,] = kword
+                uwc[i,] = uword
+            
+            if pc:
+                kpc[i,] = kpos
+                upc[i,] = upos
+        
+        X = dict()
+        if cc:
+            X['known_char_in']   = kcc
+            X['unknown_char_in'] = ucc
+        if wc:
+            X['known_word_in']   = kwc
+            X['unknown_word_in'] = uwc
+        if pc:
+            X['known_pos_in']    = kpc
+            X['unknown_pos_in']  = upc
+
+        y = np.empty((self.batch_size), dtype=int)
+        for i, (_, label) in enumerate(ids):
+            y[i] = label
+
+        return X, keras.utils.to_categorical(y, num_classes=2)
+
 
 # streams = 'char', 'words', 'tokens'
 def load_data(datafile, dataset="MaCom"):
@@ -179,4 +265,38 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
 
     return dataset
     
+def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','pos')):
+    profile = PROFILES[dataset]
+    authors = list(load_data(datafile, dataset).items())
+    authors_processed = []
+
+    cmap, wmap, pmap = load_stats(dataset)
+   
+    alltexts = []
+
+    for (uid, data) in authors:
+        processed = []
+        for d in data:
+            dproc = prepare_text(d, cmap, wmap, pmap, profile)
+            alltexts.append((uid, dproc))
+            processed.append(dproc)
+
+        authors_processed.append((uid, processed))
+
+    authors = None
+    
+    ids = []
+    for aidx, (author, data) in enumerate(authors_processed):
+        for i in range(len(data)):
+            for j in range(i+1,len(data)):
+                ids.append(((i,j), 1))
+        
+                gw = aidx
+                while gw == aidx:
+                    gw = random.randint(0, len(authors_processed)-1)
+                ids.append(((aidx, gw), 0))
+
+    random.shuffle(ids)
+    
+    return DataGenerator(ids, alltexts, channels=channels)
 

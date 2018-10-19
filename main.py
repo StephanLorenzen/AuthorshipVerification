@@ -38,16 +38,17 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
 
     print(model.summary())
 
-    vdata = None
+    datagen = avdata.get_siamese_generator(datafile, dataset, ('char','word'))
+    vdatagen = None
     if valdatafile is not None:
-        vdata = avdata.get_siamese_set(valdatafile, dataset)
+        vdatagen = avdata.get_siamese_generator(valdatafile, dataset, ('char','word'))
     
-    model.fit(inp, out, validation_data=vdata, epochs=40, verbose=1, callbacks=[MyCallback(dataset)])
+    model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1, callbacks=[MyCallback(dataset)])
     
 def test(datafile, dataset="MaCom"):
     pass
 
 
 
-train("H","I")
+train("test","train", "PAN13")
 
