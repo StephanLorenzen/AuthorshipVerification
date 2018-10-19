@@ -56,21 +56,21 @@ class DataGenerator(keras.utils.Sequence):
 
         #import pdb; pdb.set_trace()
 
-        for i, ((i,j), label) in enumerate(ids):
+        for idx, ((i,j), label) in enumerate(ids):
             ai,(kchar, kword, kpos) = self.data[i]
             aj,(uchar, uword, upos) = self.data[j]
             
             if cc:
-                kcc[i,] = kchar
-                ucc[i,] = uchar
+                kcc[idx,] = kchar
+                ucc[idx,] = uchar
             
             if wc:
-                kwc[i,] = kword
-                uwc[i,] = uword
+                kwc[idx,] = kword
+                uwc[idx,] = uword
             
             if pc:
-                kpc[i,] = kpos
-                upc[i,] = upos
+                kpc[idx,] = kpos
+                upc[idx,] = upos
         
         X = dict()
         if cc:
@@ -84,8 +84,8 @@ class DataGenerator(keras.utils.Sequence):
             X['unknown_pos_in']  = upc
 
         y = np.empty((self.batch_size), dtype=int)
-        for i, (_, label) in enumerate(ids):
-            y[i] = label
+        for idx, (_, label) in enumerate(ids):
+            y[idx] = label
 
         return X, keras.utils.to_categorical(y, num_classes=2)
 

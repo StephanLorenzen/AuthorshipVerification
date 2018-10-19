@@ -29,9 +29,6 @@ class MyCallback(Callback):
                 logfile.write((str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n"))
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
-    inp,out = avdata.get_siamese_set(datafile, dataset)
-    
-    
     profile = PROFILES[dataset]
 
     model = n1.model(profile)
@@ -50,5 +47,5 @@ def test(datafile, dataset="MaCom"):
 
 
 
-train("test","train", "PAN13")
+train("H","I", "MaCom")
 
