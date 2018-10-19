@@ -38,7 +38,8 @@ def model(profile):
     char_pool = L.GlobalMaxPooling1D(name='char_pool')
     word_pool = L.GlobalMaxPooling1D(name='word_pool')
 
-    reweight = L.Dense(1000, activation='linear', name='reweight')
+    reweight = L.Dense(400, activation='relu', name='reweight')
+    dropout  = L.Dropout(0.3)
 
     inls  = []
     outls = []
@@ -51,13 +52,13 @@ def model(profile):
         c_out = char_pool(char_conv(char_embd(c_in)))
         w_out = word_pool(word_conv(word_embd(w_in)))
     
-        concat = reweight(L.concatenate([c_out,w_out]))
+        concat = dropout(reweight(L.concatenate([c_out,w_out])))
         
         outls.append(concat)
 
 
-    dist = L.Lambda(lambda x:l1(x[0],x[1]), output_shape=lambda in_shp: (in_shp[0][0],1), name='distance')(outls)   
-        
+    dist = L.Lambda(lambda x:l1(x[0],x[1]), output_shape=lambda in_shp: (in_shp[0][0],1), name='distance')(outls)
+
     output = L.Dense(2, activation='softmax', name='output')(dist)
 
     model = Model(inputs=inls, outputs=[output], name='n1')

@@ -47,5 +47,5 @@ def test(datafile, dataset="MaCom"):
 
 
 
-train("H","I", "MaCom")
-
+#train("test","train", "PAN13")
+train("B","C")
