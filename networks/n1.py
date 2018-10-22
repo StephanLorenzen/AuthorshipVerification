@@ -63,7 +63,7 @@ def model(profile):
 
     model = Model(inputs=inls, outputs=[output], name='n1')
 
-    optimizer = O.Adam(lr=profile["lr"])
+    optimizer = O.Adam(lr=profile["lr"],epsilon=0.001)
 
     model.compile(
             optimizer=optimizer,
