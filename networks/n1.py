@@ -7,11 +7,7 @@ from keras.models import Model
 import random
 
 # Local imports
-import util.data as avdata
-
-CHAR_MAP_SIZE = 100
-WORD_MAP_SIZE = 10000
-
+import helpers.data as avdata
 
 def l1(A,B):
    return K.sum(K.abs(A-B),axis=1,keepdims=True)

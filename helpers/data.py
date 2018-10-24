@@ -3,7 +3,7 @@ from io import open
 import numpy as np
 import keras
 
-from util.profiles import PROFILES
+from helpers.profiles import PROFILES
 
 
 class DataGenerator(keras.utils.Sequence):

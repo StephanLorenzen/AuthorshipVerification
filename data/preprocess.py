@@ -81,7 +81,7 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
             continue
         
         if profile["remove_first"]:
-            text = text[len(polytext.sentences[0]):]
+            text = text[200:] #len(polytext.sentences[0]):]
         
         if len(text) > text_upper_threshold or len(text) < text_lower_threshold:
             continue
