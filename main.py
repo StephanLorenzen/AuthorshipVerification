@@ -2,7 +2,6 @@
 import tensorflow as tf
 from keras.callbacks import Callback
 import numpy as np
-from io import open
 
 # Local imports
 import helpers.data as avdata

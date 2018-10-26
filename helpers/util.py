@@ -12,8 +12,9 @@ class Checkpoint(Callback):
         lpath = "store/"+self.dataset+"/"+self.model.name+"-log.txt"
         if epoch == 0:
             with open(lpath, 'w', encoding="utf8") as log:
-                log.write(unicode("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n"))
+                log.write("Epoch\tTrainAcc\tTrainLoss\tValAcc\tValLoss\n")
         
         if logs is not None:
             with open(lpath, 'a', encoding="utf8") as logfile:
-                logfile.write(unicode(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+"\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n"))
+                logfile.write(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+
+                        "\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n")
