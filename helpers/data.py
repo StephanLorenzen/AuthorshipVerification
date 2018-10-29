@@ -91,7 +91,7 @@ class DataGenerator(keras.utils.Sequence):
 
 
 # streams = 'char', 'words', 'tokens'
-def load_data(datafile, dataset="MaCom"):
+def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
     res = dict()
     path = "data/"+dataset+"/processed/"
     with open(path+datafile+".csv", 'r', encoding="utf8") as ftxt:
@@ -103,19 +103,29 @@ def load_data(datafile, dataset="MaCom"):
                 res[uid] = [[],[],[]]
             res[uid][0].append(txt)
 
-    with open(path+datafile+"_words.csv", 'r', encoding="utf8") as fwrd:
-        for l in fwrd:
-            l = l.strip().split(";")
-            uid = l[0]
-            words = l[1].split(' ')
-            res[uid][1].append(words)
-        
-    with open(path+datafile+"_pos.csv", 'r', encoding="utf8") as fpos:
-        for l in fpos:
-            l = l.strip().split(";")
-            uid = l[0]
-            pos = l[1].split(' ')
-            res[uid][2].append(pos)
+    if 'word' in channels:
+        with open(path+datafile+"_words.csv", 'r', encoding="utf8") as fwrd:
+            for l in fwrd:
+                l = l.strip().split(";")
+                uid = l[0]
+                words = l[1].split(' ')
+                res[uid][1].append(words)
+    else:
+        for uid,v in res.items():
+            for _ in range(len(v[0])):
+                v[1].append([])
+
+    if 'pos' in channels:
+        with open(path+datafile+"_pos.csv", 'r', encoding="utf8") as fpos:
+            for l in fpos:
+                l = l.strip().split(";")
+                uid = l[0]
+                pos = l[1].split(' ')
+                res[uid][2].append(pos)
+    else:
+        for uid,v in res.items():
+            for _ in range(len(v[0])):
+                v[2].append([])
     
     for auth,[c,w,p] in res.items():
         res[auth] = list(zip(c,w,p))
@@ -267,7 +277,7 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
     
 def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','pos'), batch_size=32):
     profile = PROFILES[dataset]
-    authors = list(load_data(datafile, dataset).items())
+    authors = list(load_data(datafile, dataset, channels).items())
     authors_processed = []
 
     cmap, wmap, pmap = load_stats(dataset)
