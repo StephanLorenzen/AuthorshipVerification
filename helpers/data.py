@@ -265,7 +265,7 @@ def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
 
     return dataset
     
-def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','pos')):
+def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','pos'), batch_size=32):
     profile = PROFILES[dataset]
     authors = list(load_data(datafile, dataset).items())
     authors_processed = []
@@ -298,5 +298,5 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
 
     random.shuffle(ids)
     
-    return DataGenerator(ids, alltexts, channels=channels)
+    return DataGenerator(ids, alltexts, channels=channels, batch_size=batch_size)
 

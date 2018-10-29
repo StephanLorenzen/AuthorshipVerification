@@ -12,7 +12,7 @@ def model(profile):
     known_in = L.Input(shape=inshape, name='known_char_in', dtype='int32')
     unknown_in = L.Input(shape=inshape, name='unknown_char_in', dtype='int32')
 
-    embedding = L.Embedding(profile['char_map_size'] + 2, 5)
+    embedding = L.Embedding(profile['char_map_size'], 5)
 
     known_embed = embedding(known_in)
     unknown_embed = embedding(unknown_in)
