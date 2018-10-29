@@ -7,14 +7,12 @@ import numpy as np
 import helpers.data as avdata
 from helpers.profiles import PROFILES
 import helpers.util as util
-import networks.n1 as n1
-import networks.n2 as n2
-import networks.n3 as n3
+from networks import n1,n2,n3,n4
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     profile = PROFILES[dataset]
 
-    model = n3.model(profile)
+    model = n4.model(profile)
 
     print(model.summary())
 
