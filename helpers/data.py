@@ -2,6 +2,7 @@ import random
 from io import open
 import numpy as np
 import keras
+from keras.preprocessing import sequence
 
 from helpers.profiles import PROFILES
 
@@ -73,10 +74,9 @@ class DataGenerator(keras.utils.Sequence):
             known.append(dati[cidx])
             unknown.append(datj[cidx])
         
-        mx = max([len(x) for x in known]+[len(x) for x in unknown])
+        known = sequence.pad_sequences(known, value=0, padding='post')
+        unknown = sequence.pad_sequences(unknown, value=0, padding='post')
         
-        known = [pad(x, mx) for x in known]
-        unknown = [pad(x, mx) for x in unknown]
         return np.array(known), np.array(unknown)
 
 def pad(x, l):
