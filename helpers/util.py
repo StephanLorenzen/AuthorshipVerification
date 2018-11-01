@@ -1,3 +1,4 @@
+import re
 from keras.callbacks import Callback
 
 class Checkpoint(Callback):
@@ -18,3 +19,8 @@ class Checkpoint(Callback):
             with open(lpath, 'a', encoding="utf8") as logfile:
                 logfile.write(str(epoch)+"\t"+str(logs["acc"])+"\t"+str(logs["loss"])+
                         "\t"+str(logs["val_acc"])+"\t"+str(logs["val_loss"])+"\n")
+
+def clean(txt):
+    txt = re.sub(r'\$NL\$', '\n', txt)
+    txt = re.sub(r'\$SC\$', ';', txt)
+    return txt

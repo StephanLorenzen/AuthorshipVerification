@@ -1,5 +1,5 @@
 import random
-from io import open
+import helpers.util as util
 import numpy as np
 import keras
 from keras.preprocessing import sequence
@@ -7,8 +7,8 @@ from keras.preprocessing import sequence
 from helpers.profiles import PROFILES
 
 
-CHAR_UPPER = 10000
-WORD_UPPER = 3000
+CHAR_UPPER = 30000
+WORD_UPPER = 10000
 POS_UPPER  = WORD_UPPER
 
 class DataGenerator(keras.utils.Sequence):
@@ -23,7 +23,7 @@ class DataGenerator(keras.utils.Sequence):
         self.mapsize  = [x[1] for x in channels]
         self.shuffle = shuffle
         self.on_epoch_end()
-
+    
     def __len__(self):
         return int(np.floor(len(self.ids) / self.batch_size))
 
@@ -74,15 +74,12 @@ class DataGenerator(keras.utils.Sequence):
             known.append(dati[cidx])
             unknown.append(datj[cidx])
         
-        known = sequence.pad_sequences(known, value=0, padding='post')
-        unknown = sequence.pad_sequences(unknown, value=0, padding='post')
+        kmin = None #min([len(x) for x in known])
+        umin = None #min([len(x) for x in unknown])
+        known = sequence.pad_sequences(known, value=0, maxlen=kmin, truncating='post', padding='post')
+        unknown = sequence.pad_sequences(unknown, value=0, maxlen=umin, truncating='post', padding='post')
         
         return np.array(known), np.array(unknown)
-
-def pad(x, l):
-    while len(x) < l:
-        x.append(0)
-    return x
 
 # streams = 'char', 'words', 'tokens'
 def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
@@ -95,7 +92,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
             txt = l[-1]
             if uid not in res:
                 res[uid] = [[],[],[]]
-            res[uid][0].append(txt)
+            res[uid][0].append(util.clean(txt))
 
     if 'word' in channels:
         with open(path+datafile+"_words.csv", 'r', encoding="utf8") as fwrd:
@@ -213,20 +210,14 @@ def prepare_text(data, cmap, wmap, pmap, profile):
     for c in txt:
         chars.append(cmap.get(c, 0))
     chars = chars[:CHAR_UPPER]
-    #while len(chars) < 10000:
-    #    chars.append(0)
     # Words
     for w in wrds:
         words.append(wmap.get(w, 0))
     words = words[:WORD_UPPER]
-    #while len(words) < 3000:
-    #    words.append(0)
     # POS tags
     for p in pos:
         poss.append(pmap.get(p, 0))
     poss = poss[:POS_UPPER]
-    #while len(poss) < 3000:
-    #    poss.append(0)
     return chars, words, poss
 
 def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
@@ -289,10 +280,9 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
     for (uid, data) in authors:
         processed = []
         for d in data:
-            dproc = prepare_text(d, cmap, wmap, pmap, profile)
-            
+            dproc = prepare_text(d, cmap, wmap, pmap, profile)            
             alltexts.append((uid, dproc))
-            processed.append(dproc)
+            processed.append(len(alltexts)-1)
 
         authors_processed.append((uid, processed))
 
@@ -302,12 +292,13 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
     for aidx, (author, data) in enumerate(authors_processed):
         for i in range(len(data)):
             for j in range(i+1,len(data)):
-                ids.append(((i,j), 1))
-        
+                ids.append(((data[i],data[j]), 1))
+                
                 gw = aidx
                 while gw == aidx:
                     gw = random.randint(0, len(authors_processed)-1)
-                ids.append(((aidx, gw), 0))
+                badidx = random.choice(authors_processed[gw][1])
+                ids.append(((data[i], badidx), 0))
 
     random.shuffle(ids)
     

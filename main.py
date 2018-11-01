@@ -14,7 +14,7 @@ from networks import n1,n2,n3,n4
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     profile = PROFILES[dataset]
 
-    datagen = avdata.get_siamese_generator(datafile, dataset, channels=('char','word'), batch_size=16)
+    datagen = avdata.get_siamese_generator(datafile, dataset, channels=('char',), batch_size=8)
     
     if network == 'n1':
         model = n1.model(profile, datagen)
@@ -29,8 +29,8 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
 
     vdatagen = None
     if valdatafile is not None:
-        vdatagen = avdata.get_siamese_generator(valdatafile, dataset, channels=('char','word'),
-                batch_size=16)
+        vdatagen = avdata.get_siamese_generator(valdatafile, dataset, channels=('char',),
+                batch_size=8)
     
     model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1,
                             callbacks=[util.Checkpoint(dataset)])
