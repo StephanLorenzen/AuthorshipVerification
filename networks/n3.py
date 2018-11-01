@@ -12,10 +12,10 @@ import helpers.data as avdata
 def absdiff(A,B):
     return K.abs(A-B)
 
-def model(profile):
+def model(profile, datagen):
     # Siamese part of network
-    char_embd = L.Embedding(profile["char_map_size"], 5)
-    word_embd = L.Embedding(profile["word_map_size"], 8)
+    char_embd = L.Embedding(datagen.channel_size('char'), 5)
+    word_embd = L.Embedding(datagen.channel_size('word'), 8)
     #TODO POS-input
 
     char_conv = L.Convolution1D(
@@ -40,8 +40,8 @@ def model(profile):
     inls  = []
     outls = []
     for name in ['known', 'unknown']:
-        c_in = L.Input(shape=(10000,), name=name+"_char_in", dtype='int32')
-        w_in = L.Input(shape=(3000,), name=name+"_word_in", dtype='int32')
+        c_in = L.Input(shape=(None,), name=name+"_char_in", dtype='int32')
+        w_in = L.Input(shape=(None,), name=name+"_word_in", dtype='int32')
         inls.append(c_in)
         inls.append(w_in)
 

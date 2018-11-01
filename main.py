@@ -14,18 +14,19 @@ from networks import n1,n2,n3,n4
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     profile = PROFILES[dataset]
 
+    datagen = avdata.get_siamese_generator(datafile, dataset, channels=('char','word'), batch_size=16)
+    
     if network == 'n1':
-        model = n1.model(profile)
+        model = n1.model(profile, datagen)
     elif network == 'n2':
-        model = n2.model(profile)
+        model = n2.model(profile, datagen)
     elif network == 'n3':
-        model = n3.model(profile)
+        model = n3.model(profile, datagen)
     elif network == 'n4':
-        model = n4.model(profile)
+        model = n4.model(profile, datagen)
 
     print(model.summary())
 
-    datagen = avdata.get_siamese_generator(datafile, dataset, channels=('char','word'), batch_size=16)
     vdatagen = None
     if valdatafile is not None:
         vdatagen = avdata.get_siamese_generator(valdatafile, dataset, channels=('char','word'),

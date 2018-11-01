@@ -6,14 +6,20 @@ import keras
 from helpers.profiles import PROFILES
 
 
+CHAR_UPPER = 10000
+WORD_UPPER = 3000
+POS_UPPER  = WORD_UPPER
+
 class DataGenerator(keras.utils.Sequence):
     
-    def __init__(self, ids, data, batch_size=32, channels=('char', 'word', 'pos'), shuffle=True):
+    def __init__(self, ids, data, batch_size=32, channels=(('char',0), ('word',0), ('pos',0)),
+            shuffle=True):
         #self.dim = dim
         self.batch_size = batch_size
         self.data = data
         self.ids = ids 
-        self.channels = channels
+        self.channels = [x[0] for x in channels]
+        self.mapsize  = [x[1] for x in channels]
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -37,51 +43,65 @@ class DataGenerator(keras.utils.Sequence):
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
+    def channel_size(self,channel):
+        for c,size in zip(self.channels,self.mapsize):
+            if c == channel:
+                return size+1
+        print("Channel not included in generator...")
+
     def __data_generation(self, ids):
-        cc = 'char' in self.channels
-        wc = 'word' in self.channels
-        pc = 'pos' in self.channels
-
-        if cc:
-            kcc = np.empty((self.batch_size, 10000))
-            ucc = np.empty((self.batch_size, 10000))
-
-        if wc:
-            uwc = np.empty((self.batch_size, 3000)) 
-            kwc = np.empty((self.batch_size, 3000)) 
-        
-        if pc:
-            upc = np.empty((self.batch_size, 3000)) 
-            kpc = np.empty((self.batch_size, 3000)) 
-
-        #import pdb; pdb.set_trace()
-
-        for idx, ((i,j), label) in enumerate(ids):
-            ai,(kchar, kword, kpos) = self.data[i]
-            aj,(uchar, uword, upos) = self.data[j]
-            
-            if cc:
-                kcc[idx,] = kchar
-                ucc[idx,] = uchar
-            
-            if wc:
-                kwc[idx,] = kword
-                uwc[idx,] = uword
-            
-            if pc:
-                kpc[idx,] = kpos
-                upc[idx,] = upos
-        
         X = dict()
-        if cc:
-            X['known_char_in']   = kcc
-            X['unknown_char_in'] = ucc
-        if wc:
-            X['known_word_in']   = kwc
-            X['unknown_word_in'] = uwc
-        if pc:
-            X['known_pos_in']    = kpc
-            X['unknown_pos_in']  = upc
+        for c in self.channels:
+            known, unknown = self.prep_channel(c, ids)
+            X['known_'+c+'_in'] = known
+            X['unknown_'+c+'_in'] = unknown
+        
+        #cc = 'char' in self.channels
+        #wc = 'word' in self.channels
+        #pc = 'pos' in self.channels
+
+        #if cc:
+        #    kcc = []#np.empty((self.batch_size, 10000))
+        #    ucc = []#np.empty((self.batch_size, 10000))
+
+        #if wc:
+        #    uwc = []#np.empty((self.batch_size, 3000)) 
+        #    kwc = []#np.empty((self.batch_size, 3000)) 
+        #
+        #if pc:
+        #    upc = []#np.empty((self.batch_size, 3000)) 
+        #    kpc = []#np.empty((self.batch_size, 3000)) 
+
+        #for idx, ((i,j), label) in enumerate(ids):
+        #    ai,(kchar, kword, kpos) = self.data[i]
+        #    aj,(uchar, uword, upos) = self.data[j]
+        #    
+        #    if cc:
+        #        kcc.append(kchar)
+        #        ucc.append(uchar)
+        #        #kcc[idx,] = kchar
+        #        #ucc[idx,] = uchar
+        #    
+        #    if wc:
+        #        kwc.append(kword)#kwc[idx,] = kword
+        #        uwc.append(uword)#uwc[idx,] = uword
+        #    
+        #    if pc:
+        #        kpc.append(kpos)#kpc[idx,] = kpos
+        #        upc.append(upos)#upc[idx,] = upos
+       
+        #if cc:
+
+        #X = dict()
+        #if cc:
+        #    X['known_char_in']   = kcc
+        #    X['unknown_char_in'] = ucc
+        #if wc:
+        #    X['known_word_in']   = kwc
+        #    X['unknown_word_in'] = uwc
+        #if pc:
+        #    X['known_pos_in']    = kpc
+        #    X['unknown_pos_in']  = upc
 
         y = np.empty((self.batch_size), dtype=int)
         for idx, (_, label) in enumerate(ids):
@@ -89,6 +109,31 @@ class DataGenerator(keras.utils.Sequence):
 
         return X, keras.utils.to_categorical(y, num_classes=2)
 
+    def prep_channel(self, channel, ids):
+        cidx = {'char':0,'word':1,'pos':2}[channel]
+        known   = []
+        unknown = []
+        for ((i,j), _) in ids:
+            ai,dati = self.data[i]
+            aj,datj = self.data[j]
+
+            known.append(dati[cidx])
+            unknown.append(datj[cidx])
+        
+        kmx = max([len(x) for x in known])
+        umx = max([len(x) for x in unknown])
+        kmx = max(kmx,umx)
+        umx = kmx
+
+        known = [pad(x, kmx) for x in known]
+        unknown = [pad(x, kmx) for x in unknown]
+
+        return np.array(known), np.array(unknown)
+
+def pad(x, l):
+    while len(x) < l:
+        x.append(0)
+    return x
 
 # streams = 'char', 'words', 'tokens'
 def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
@@ -165,11 +210,13 @@ def generate_stats(datafile, dataset="MaCom"):
 
     cmap = list(cmap.items())
     cmap.sort(key=lambda x:-x[1])
-    cmap = cmap[:profile["char_map_size"]-1]
+    cmap = [x for x in cmap if x[1] > profile["char_freq_cutoff"]]
+    #cmap = cmap[:profile["char_map_size"]-1]
 
     wmap = list(wmap.items())
     wmap.sort(key=lambda x:-x[1])
-    wmap = wmap[:profile["word_map_size"]-1]
+    wmap = [x for x in wmap if x[1] > profile["word_freq_cutoff"]]
+    #wmap = wmap[:profile["word_map_size"]-1]
     
     pmap = list(pmap.items())
     pmap.sort(key=lambda x:-x[1])
@@ -210,21 +257,21 @@ def prepare_text(data, cmap, wmap, pmap, profile):
     # Chars
     for c in txt:
         chars.append(cmap.get(c, 0))
-    chars = chars[:10000]
-    while len(chars) < 10000:
-        chars.append(0)
+    chars = chars[:CHAR_UPPER]
+    #while len(chars) < 10000:
+    #    chars.append(0)
     # Words
     for w in wrds:
         words.append(wmap.get(w, 0))
-    words = words[:3000]
-    while len(words) < 3000:
-        words.append(0)
+    words = words[:WORD_UPPER]
+    #while len(words) < 3000:
+    #    words.append(0)
     # POS tags
     for p in pos:
         poss.append(pmap.get(p, 0))
-    poss = poss[:3000]
-    while len(poss) < 3000:
-        poss.append(0)
+    poss = poss[:POS_UPPER]
+    #while len(poss) < 3000:
+    #    poss.append(0)
     return chars, words, poss
 
 def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
@@ -281,7 +328,7 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
     authors_processed = []
 
     cmap, wmap, pmap = load_stats(dataset)
-   
+
     alltexts = []
 
     for (uid, data) in authors:
@@ -308,5 +355,7 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
 
     random.shuffle(ids)
     
+    smap = {'char':len(cmap), 'word':len(wmap), 'pos':len(pmap)}
+    channels = [(x,smap[x]) for x in channels]
     return DataGenerator(ids, alltexts, channels=channels, batch_size=batch_size)
 
