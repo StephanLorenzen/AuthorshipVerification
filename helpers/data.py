@@ -127,7 +127,6 @@ class DataGenerator(keras.utils.Sequence):
 
         known = [pad(x, kmx) for x in known]
         unknown = [pad(x, kmx) for x in unknown]
-
         return np.array(known), np.array(unknown)
 
 def pad(x, l):
@@ -143,7 +142,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
         for l in ftxt:
             l = l.strip().split(";")
             uid = l[0]
-            txt = l[1]
+            txt = l[-1]
             if uid not in res:
                 res[uid] = [[],[],[]]
             res[uid][0].append(txt)
@@ -153,7 +152,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
             for l in fwrd:
                 l = l.strip().split(";")
                 uid = l[0]
-                words = l[1].split(' ')
+                words = l[-1].split(' ')
                 res[uid][1].append(words)
     else:
         for uid,v in res.items():
@@ -165,7 +164,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
             for l in fpos:
                 l = l.strip().split(";")
                 uid = l[0]
-                pos = l[1].split(' ')
+                pos = l[-1].split(' ')
                 res[uid][2].append(pos)
     else:
         for uid,v in res.items():
@@ -178,50 +177,56 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
     return res
 
 def generate_stats(datafile, dataset="MaCom"):
+    print("Loading data")
     data = load_data(datafile, dataset)
     profile = PROFILES[dataset]
-    text = ""
-    words = []
-    poss = []
-    for _,authdata in data.items():
+    print("Creating channels")
+    
+    cmap = dict()
+    wmap = dict()
+    pmap = dict()
+    print("Creating maps")
+    l = len(data.items())
+    per = 0
+    ctot = 0
+    wtot = 0
+    for i,(_,authdata) in enumerate(data.items()):
+        if float(i)/float(l)*100 > per:
+            print(str(per)+"%")
+            per+=10
         for txt,wrd,pos in authdata:
-            text += txt
-            words += wrd
-            poss += pos
+            ctot += len(txt)
+            wtot += len(wrd)
+            for c in txt:
+                if c not in cmap:
+                    cmap[c] = 0
+                cmap[c] += 1
+            for w in wrd:
+                if w not in wmap:
+                    wmap[w] = 0
+                wmap[w] += 1
+            for p in pos:
+                if p not in pmap:
+                    pmap[p] = 0
+                pmap[p] += 1
     data = None
 
-    cmap = dict()
-    for c in text:
-        if c not in cmap:
-            cmap[c] = 0
-        cmap[c] += 1
-
-    wmap = dict()
-    for w in words:
-        if w not in wmap:
-            wmap[w] = 0
-        wmap[w] += 1
-    
-    pmap = dict()
-    for p in poss:
-        if p not in pmap:
-            pmap[p] = 0
-        pmap[p] += 1
-
+    print("Post processing")
     cmap = list(cmap.items())
     cmap.sort(key=lambda x:-x[1])
-    cmap = [x for x in cmap if x[1] > profile["char_freq_cutoff"]]
+    cmap = [x for x in cmap if x[1] > profile["char_freq_cutoff"]*ctot]
     #cmap = cmap[:profile["char_map_size"]-1]
 
     wmap = list(wmap.items())
     wmap.sort(key=lambda x:-x[1])
-    wmap = [x for x in wmap if x[1] > profile["word_freq_cutoff"]]
+    wmap = [x for x in wmap if x[1] > profile["word_freq_cutoff"]*wtot]
     #wmap = wmap[:profile["word_map_size"]-1]
     
     pmap = list(pmap.items())
     pmap.sort(key=lambda x:-x[1])
     pmap = pmap[:profile["pos_map_size"]-1]
 
+    print("Wrtining maps")
     path = "data/"+dataset+"/processed/"
     with open(path+'cmap.txt', 'w', encoding="utf8") as f:
         for c in cmap:
@@ -335,6 +340,7 @@ def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','po
         processed = []
         for d in data:
             dproc = prepare_text(d, cmap, wmap, pmap, profile)
+            
             alltexts.append((uid, dproc))
             processed.append(dproc)
 
