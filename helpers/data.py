@@ -56,53 +56,6 @@ class DataGenerator(keras.utils.Sequence):
             X['known_'+c+'_in'] = known
             X['unknown_'+c+'_in'] = unknown
         
-        #cc = 'char' in self.channels
-        #wc = 'word' in self.channels
-        #pc = 'pos' in self.channels
-
-        #if cc:
-        #    kcc = []#np.empty((self.batch_size, 10000))
-        #    ucc = []#np.empty((self.batch_size, 10000))
-
-        #if wc:
-        #    uwc = []#np.empty((self.batch_size, 3000)) 
-        #    kwc = []#np.empty((self.batch_size, 3000)) 
-        #
-        #if pc:
-        #    upc = []#np.empty((self.batch_size, 3000)) 
-        #    kpc = []#np.empty((self.batch_size, 3000)) 
-
-        #for idx, ((i,j), label) in enumerate(ids):
-        #    ai,(kchar, kword, kpos) = self.data[i]
-        #    aj,(uchar, uword, upos) = self.data[j]
-        #    
-        #    if cc:
-        #        kcc.append(kchar)
-        #        ucc.append(uchar)
-        #        #kcc[idx,] = kchar
-        #        #ucc[idx,] = uchar
-        #    
-        #    if wc:
-        #        kwc.append(kword)#kwc[idx,] = kword
-        #        uwc.append(uword)#uwc[idx,] = uword
-        #    
-        #    if pc:
-        #        kpc.append(kpos)#kpc[idx,] = kpos
-        #        upc.append(upos)#upc[idx,] = upos
-       
-        #if cc:
-
-        #X = dict()
-        #if cc:
-        #    X['known_char_in']   = kcc
-        #    X['unknown_char_in'] = ucc
-        #if wc:
-        #    X['known_word_in']   = kwc
-        #    X['unknown_word_in'] = uwc
-        #if pc:
-        #    X['known_pos_in']    = kpc
-        #    X['unknown_pos_in']  = upc
-
         y = np.empty((self.batch_size), dtype=int)
         for idx, (_, label) in enumerate(ids):
             y[idx] = label
@@ -120,13 +73,10 @@ class DataGenerator(keras.utils.Sequence):
             known.append(dati[cidx])
             unknown.append(datj[cidx])
         
-        kmx = max([len(x) for x in known])
-        umx = max([len(x) for x in unknown])
-        kmx = max(kmx,umx)
-        umx = kmx
-
-        known = [pad(x, kmx) for x in known]
-        unknown = [pad(x, kmx) for x in unknown]
+        mx = max([len(x) for x in known]+[len(x) for x in unknown])
+        
+        known = [pad(x, mx) for x in known]
+        unknown = [pad(x, mx) for x in unknown]
         return np.array(known), np.array(unknown)
 
 def pad(x, l):
