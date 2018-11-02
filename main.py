@@ -7,30 +7,27 @@ import argparse
 
 # Local imports
 import helpers.data as avdata
-from helpers.profiles import PROFILES
 import helpers.util as util
 from networks import n1,n2,n3,n4
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
-    profile = PROFILES[dataset]
-
-    datagen = avdata.get_siamese_generator(datafile, dataset, channels=('char',), batch_size=8)
+    dinfo = avdata.DataInfo(dataset)
     
     if network == 'n1':
-        model = n1.model(profile, datagen)
+        model = n1.model(dinfo)
     elif network == 'n2':
-        model = n2.model(profile, datagen)
+        model = n2.model(dinfo)
     elif network == 'n3':
-        model = n3.model(profile, datagen)
+        model = n3.model(dinfo)
     elif network == 'n4':
-        model = n4.model(profile, datagen)
+        model = n4.model(dinfo)
 
     print(model.summary())
-
+    
+    datagen = avdata.DataGenerator(dinfo, datafile)
     vdatagen = None
     if valdatafile is not None:
-        vdatagen = avdata.get_siamese_generator(valdatafile, dataset, channels=('char',),
-                batch_size=8)
+        vdatagen = avdata.DataGenerator(dinfo, valdatafile)
     
     model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1,
                             callbacks=[util.Checkpoint(dataset)])

@@ -2,74 +2,145 @@ import random
 import helpers.util as util
 import numpy as np
 import keras
+import configparser
+
 from keras.preprocessing import sequence
 
-from helpers.profiles import PROFILES
+class DataInfo:
+    def __init__(self, dataset):
+        config = configparser.ConfigParser()
+        config.read('data/'+str(dataset)+"/info.ini")
+        config = config['Info']
 
+        self.dataset = dataset
 
-CHAR_UPPER = 30000
-WORD_UPPER = 10000
-POS_UPPER  = WORD_UPPER
+        self.text_max_length = int(config.get('text_max_length', -1))
+        self.word_max_length = int(config.get('word_max_length', -1))
+        self.pos_max_length  = int(config.get('pos_max_length', self.word_max_length))
+
+        self.char_freq_cutoff = float(config.get('char_freq_cutoff', 0.0))
+        self.word_freq_cutoff = float(config.get('word_freq_cutoff', 0.0))
+
+        self.cmap, self.wmap, self.pmap = load_stats(dataset)
+
+        self._channels = []
+        self._batch_size = 32
+
+    def channels(self, channels=None):
+        if channels is not None:
+            self._channels = channels
+        return self._channels
+
+    def batch_size(self, size=None):
+        if size is not None:
+            self._batch_size = size
+        return self._batch_size
+
+    def channel_size(self,channel):
+        return {'char':len(self.cmap),'word':len(self.wmap),'pos':len(self.pmap)}[channel]+1
+
+    def encode(self, data):
+        def _encode(stream, mp, upper=None, df=0):
+            res = []
+            for s in stream:
+                res.append(mp.get(s, df))
+            if upper > 0:
+                res = res[:upper]
+            return res
+
+        assert len(self._channels) == len(data)
+
+        res = []
+        for i,c in enumerate(self._channels):
+            if c == 'char':
+                res.append(_encode(data[i], self.cmap, self.text_max_length))
+            elif c == 'word':
+                res.append(_encode(data[i], self.wmap, self.word_max_length))
+            elif c == 'pos':
+                res.append(_encode(data[i], self.pmap, self.pos_max_length))
+        
+        return tuple(res)
 
 class DataGenerator(keras.utils.Sequence):
-    
-    def __init__(self, ids, data, batch_size=32, channels=(('char',0), ('word',0), ('pos',0)),
-            shuffle=True):
-        #self.dim = dim
-        self.batch_size = batch_size
-        self.data = data
-        self.ids = ids 
-        self.channels = [x[0] for x in channels]
-        self.mapsize  = [x[1] for x in channels]
-        self.shuffle = shuffle
+    def __init__(self, datainfo, filename, shuffle=True):
+        self.datainfo = datainfo
+        self.shuffle  = shuffle
+        self.authors  = []
+        self.data     = []
+        self.problems = []
+        
+        self.get_data(filename)
+        self.construct_problems()
+        #import pdb; pdb.set_trace() 
         self.on_epoch_end()
-    
+   
+    def get_data(self, filename):
+        self.data = []
+        self.authors = []
+        auths = list(load_data(filename, self.datainfo.dataset, self.datainfo.channels()).items())
+        
+        for (uid, data) in auths:
+            processed = []
+            for d in data:
+                proc = self.datainfo.encode(d)
+                self.data.append(proc)
+                processed.append(len(self.data)-1)
+            self.authors.append(processed)
+
+    def construct_problems(self):
+        self.problems = []
+        for aidx, data in enumerate(self.authors):
+            for i,pi in enumerate(data):
+                for j in range(i+1,len(data)):
+                    pj = data[j]
+                    self.problems.append(((pi,pj), 1))
+                
+                    gw = aidx
+                    while gw == aidx:
+                        gw = random.randint(0, len(self.authors)-1)
+                    pbad = random.choice(self.authors[gw])
+                    self.problems.append(((pi, pbad), 0))
+
+        random.shuffle(self.problems)
+
     def __len__(self):
-        return int(np.floor(len(self.ids) / self.batch_size))
+        return int(np.floor(len(self.problems) / self.datainfo.batch_size()))
 
     def __getitem__(self, index):
         # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        indexes = self.indexes[index*self.datainfo.batch_size():(index+1)*self.datainfo.batch_size()]
 
         # Find list of IDs
-        temp = [self.ids[k] for k in indexes]
+        temp = [self.problems[k] for k in indexes]
 
         # Generate data
         X, y = self.__data_generation(temp)
-
         return X, y
 
     def on_epoch_end(self):
-        self.indexes = np.arange(len(self.ids))
+        self.indexes = np.arange(len(self.problems))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def channel_size(self,channel):
-        for c,size in zip(self.channels,self.mapsize):
-            if c == channel:
-                return size+1
-        print("Channel not included in generator...")
-
     def __data_generation(self, ids):
         X = dict()
-        for c in self.channels:
-            known, unknown = self.prep_channel(c, ids)
+        for cidx,c in enumerate(self.datainfo.channels()):
+            known, unknown = self.prep_channel(cidx, ids)
             X['known_'+c+'_in'] = known
             X['unknown_'+c+'_in'] = unknown
         
-        y = np.empty((self.batch_size), dtype=int)
+        y = np.empty((self.datainfo.batch_size()), dtype=int)
         for idx, (_, label) in enumerate(ids):
             y[idx] = label
 
         return X, keras.utils.to_categorical(y, num_classes=2)
 
-    def prep_channel(self, channel, ids):
-        cidx = {'char':0,'word':1,'pos':2}[channel]
+    def prep_channel(self, cidx, ids):
         known   = []
         unknown = []
         for ((i,j), _) in ids:
-            ai,dati = self.data[i]
-            aj,datj = self.data[j]
+            dati = self.data[i]
+            datj = self.data[j]
 
             known.append(dati[cidx])
             unknown.append(datj[cidx])
@@ -81,52 +152,51 @@ class DataGenerator(keras.utils.Sequence):
         
         return np.array(known), np.array(unknown)
 
+
 # streams = 'char', 'words', 'tokens'
 def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
     res = dict()
     path = "data/"+dataset+"/processed/"
-    with open(path+datafile+".csv", 'r', encoding="utf8") as ftxt:
-        for l in ftxt:
-            l = l.strip().split(";")
-            uid = l[0]
-            txt = l[-1]
+    def load_channel(fname, fun=None):
+        chres = dict()
+        with open(fname, 'r', encoding="utf8") as chan:
+            for l in chan:
+                l = l.strip().split(";")
+                uid, ts, val = l if len(l) == 3 else (l[0], None, l[1])
+                if uid not in chres:
+                    chres[uid] = []
+                chres[uid].append(val if fun is None else fun(val))
+        return chres
+
+    res = dict()
+    for c in channels:
+        if c == 'char':
+            chres = load_channel(path+datafile+'.csv', fun=util.clean)
+        elif c == 'word':
+            chres = load_channel(path+datafile+'_words.csv', fun=lambda x: x.split(' '))
+        elif c == 'pos':
+            chres = load_channel(path+datafile+'_pos.csv', fun=lambda x: x.split(' '))
+            
+        for uid, val in chres.items():
             if uid not in res:
-                res[uid] = [[],[],[]]
-            res[uid][0].append(util.clean(txt))
+                res[uid] = []
+            res[uid].append(val)
 
-    if 'word' in channels:
-        with open(path+datafile+"_words.csv", 'r', encoding="utf8") as fwrd:
-            for l in fwrd:
-                l = l.strip().split(";")
-                uid = l[0]
-                words = l[-1].split(' ')
-                res[uid][1].append(words)
-    else:
-        for uid,v in res.items():
-            for _ in range(len(v[0])):
-                v[1].append([])
-
-    if 'pos' in channels:
-        with open(path+datafile+"_pos.csv", 'r', encoding="utf8") as fpos:
-            for l in fpos:
-                l = l.strip().split(";")
-                uid = l[0]
-                pos = l[-1].split(' ')
-                res[uid][2].append(pos)
-    else:
-        for uid,v in res.items():
-            for _ in range(len(v[0])):
-                v[2].append([])
-    
-    for auth,[c,w,p] in res.items():
-        res[auth] = list(zip(c,w,p))
+    for auth,vals in res.items():
+        zipped = []
+        for i in range(len(vals[0])):
+            elem = []
+            for d in range(len(vals)):
+                elem.append(vals[d][i])
+            zipped.append(tuple(elem))
+        res[auth] = zipped
     
     return res
 
 def generate_stats(datafile, dataset="MaCom"):
+    dinfo = DataInfo(dataset)
     print("Loading data")
     data = load_data(datafile, dataset)
-    profile = PROFILES[dataset]
     print("Creating channels")
     
     cmap = dict()
@@ -160,18 +230,15 @@ def generate_stats(datafile, dataset="MaCom"):
 
     print("Post processing")
     cmap = list(cmap.items())
+    cmap = [x for x in cmap if x[1] > dinfo.char_freq_cutoff*ctot]
     cmap.sort(key=lambda x:-x[1])
-    cmap = [x for x in cmap if x[1] > profile["char_freq_cutoff"]*ctot]
-    #cmap = cmap[:profile["char_map_size"]-1]
 
     wmap = list(wmap.items())
+    wmap = [x for x in wmap if x[1] > dinfo.word_freq_cutoff*wtot]
     wmap.sort(key=lambda x:-x[1])
-    wmap = [x for x in wmap if x[1] > profile["word_freq_cutoff"]*wtot]
-    #wmap = wmap[:profile["word_map_size"]-1]
     
     pmap = list(pmap.items())
     pmap.sort(key=lambda x:-x[1])
-    pmap = pmap[:profile["pos_map_size"]-1]
 
     print("Wrtining maps")
     path = "data/"+dataset+"/processed/"
@@ -196,113 +263,9 @@ def load_stats(dataset="MaCom"):
         for i,l in enumerate(f):
             l = l.split(";")
             wmap[l[0]] = i+1
-    with open(path+'pmap.txt', 'w', encoding="utf8") as f:
-        for p in pmap:
-            f.write(str(p[0])+";"+str(p[1])+"\n")
+    with open(path+'pmap.txt', 'r', encoding="utf8") as f:
+        for i,l in enumerate(f):
+            l = l.split(";")
+            pmap[l[0]] = i+1
     return cmap, wmap, pmap
-
-def prepare_text(data, cmap, wmap, pmap, profile):
-    txt, wrds, pos = data
-    chars = []
-    words = []
-    poss  = []
-    # Chars
-    for c in txt:
-        chars.append(cmap.get(c, 0))
-    chars = chars[:CHAR_UPPER]
-    # Words
-    for w in wrds:
-        words.append(wmap.get(w, 0))
-    words = words[:WORD_UPPER]
-    # POS tags
-    for p in pos:
-        poss.append(pmap.get(p, 0))
-    poss = poss[:POS_UPPER]
-    return chars, words, poss
-
-def get_siamese_set(datafile, dataset="MaCom", formatinput=True):
-    profile = PROFILES[dataset]
-    authors = list(load_data(datafile, dataset).items())
-    authors_processed = []
-
-    cmap, wmap, pmap = load_stats(dataset)
-    
-    for (uid, data) in authors:
-        processed = []
-        for d in data:
-            dproc = prepare_text(d, cmap, wmap, pmap, profile)
-            processed.append(dproc)
-
-        authors_processed.append((uid, processed))
-
-    authors = None
-    
-    dataset = []
-    for aidx, (author, data) in enumerate(authors_processed):
-        for i in range(len(data)):
-            for j in range(i+1,len(data)):
-                d1 = data[i]
-                d2 = data[j]
-                dataset.append((tuple(d1), tuple(d2), 1))
-        
-                gw = aidx
-                while gw == aidx:
-                    gw = random.randint(0, len(authors_processed)-1)
-                baddata = authors_processed[gw][1]
-                godd = data[random.randint(0, len(data)-1)]
-                badd = baddata[random.randint(0, len(baddata)-1)]
-                dataset.append((tuple(godd), tuple(badd), 0))
-
-    random.shuffle(dataset)
-    
-    if formatinput:
-        inp = dict()
-        inp['known_char_in'] = np.array([x[0][0] for x in dataset])
-        inp['known_word_in'] = np.array([x[0][1] for x in dataset])
-        inp['known_pos_in']  = np.array([x[0][2] for x in dataset])
-        inp['unknown_char_in'] = np.array([x[1][0] for x in dataset])
-        inp['unknown_word_in'] = np.array([x[1][1] for x in dataset])
-        inp['unknown_pos_in']  = np.array([x[1][2] for x in dataset])
-        out = {'output':np.array([[1,0] if x[2] else [0,1] for x in dataset])}
-        return inp, out
-
-    return dataset
-    
-def get_siamese_generator(datafile, dataset="MaCom", channels=('char','word','pos'), batch_size=32):
-    profile = PROFILES[dataset]
-    authors = list(load_data(datafile, dataset, channels).items())
-    authors_processed = []
-
-    cmap, wmap, pmap = load_stats(dataset)
-
-    alltexts = []
-
-    for (uid, data) in authors:
-        processed = []
-        for d in data:
-            dproc = prepare_text(d, cmap, wmap, pmap, profile)            
-            alltexts.append((uid, dproc))
-            processed.append(len(alltexts)-1)
-
-        authors_processed.append((uid, processed))
-
-    authors = None
-    
-    ids = []
-    for aidx, (author, data) in enumerate(authors_processed):
-        for i in range(len(data)):
-            for j in range(i+1,len(data)):
-                ids.append(((data[i],data[j]), 1))
-                
-                gw = aidx
-                while gw == aidx:
-                    gw = random.randint(0, len(authors_processed)-1)
-                badidx = random.choice(authors_processed[gw][1])
-                ids.append(((data[i], badidx), 0))
-
-    random.shuffle(ids)
-    
-    smap = {'char':len(cmap), 'word':len(wmap), 'pos':len(pmap)}
-    channels = [(x,smap[x]) for x in channels]
-    return DataGenerator(ids, alltexts, channels=channels, batch_size=batch_size)
 

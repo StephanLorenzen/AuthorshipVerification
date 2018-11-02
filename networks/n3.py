@@ -12,10 +12,12 @@ import helpers.data as avdata
 def absdiff(A,B):
     return K.abs(A-B)
 
-def model(profile, datagen):
+def model(dinfo):
+    dinfo.channels(('char',))
+
     # Siamese part of network
-    char_embd = L.Embedding(datagen.channel_size('char'), 5)
-    word_embd = L.Embedding(datagen.channel_size('word'), 8)
+    char_embd = L.Embedding(dinfo.channel_size('char'), 5)
+    word_embd = L.Embedding(dinfo.channel_size('word'), 8)
     #TODO POS-input
 
     char_conv = L.Convolution1D(
@@ -41,12 +43,12 @@ def model(profile, datagen):
     outls = []
     for name in ['known', 'unknown']:
         c_in = L.Input(shape=(None,), name=name+"_char_in", dtype='int32')
-        w_in = L.Input(shape=(None,), name=name+"_word_in", dtype='int32')
+        #w_in = L.Input(shape=(None,), name=name+"_word_in", dtype='int32')
         inls.append(c_in)
-        inls.append(w_in)
+        #inls.append(w_in)
 
         c_out = char_pool(char_conv(char_embd(c_in)))
-        w_out = word_pool(word_conv(word_embd(w_in)))
+        #w_out = word_pool(word_conv(word_embd(w_in)))
     
         #concat = dropout(reweight(L.concatenate([c_out,w_out])))
         concat = c_out
@@ -59,7 +61,7 @@ def model(profile, datagen):
 
     model = Model(inputs=inls, outputs=[output], name='n1')
 
-    optimizer = O.Adam(lr=profile["lr"])
+    optimizer = O.Adam(lr=0.01)
 
     model.compile(
             optimizer=optimizer,

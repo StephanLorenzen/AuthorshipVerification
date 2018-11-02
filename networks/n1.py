@@ -12,11 +12,13 @@ import helpers.data as avdata
 def l1(A,B):
    return K.sum(K.abs(A-B),axis=1,keepdims=True)
 
-def model(profile, datagen):
+def model(dinfo):
+    dinfo.channels(('char','word'))
+    dinfo.batch_size(8)
+
     # Siamese part of network
-    char_embd = L.Embedding(datagen.channel_size('char'), 5)
-    word_embd = L.Embedding(datagen.channel_size('word'), 8)
-    #TODO POS-input
+    char_embd = L.Embedding(dinfo.channel_size('char'), 5)
+    word_embd = L.Embedding(dinfo.channel_size('word'), 8)
 
     char_conv = L.Convolution1D(
         filters=500,
@@ -59,7 +61,7 @@ def model(profile, datagen):
 
     model = Model(inputs=inls, outputs=[output], name='n1')
 
-    optimizer = O.Adam(lr=profile["lr"],epsilon=0.001)
+    optimizer = O.Adam(lr=0.0005)
 
     model.compile(
             optimizer=optimizer,

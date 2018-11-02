@@ -6,13 +6,16 @@ import keras.optimizers as O
 from keras.models import Model
 
 
-def model(profile, datagen):
+def model(dinfo):
+    dinfo.channels(('char',))
+    dinfo.batch_size(8)
+
     inshape = (None, )
     
     known_in = L.Input(shape=inshape, name='known_char_in', dtype='int32')
     unknown_in = L.Input(shape=inshape, name='unknown_char_in', dtype='int32')
 
-    embedding = L.Embedding(datagen.channel_size('char'), 5)
+    embedding = L.Embedding(dinfo.channel_size('char'), 5)
 
     known_embed = embedding(known_in)
     unknown_embed = embedding(unknown_in)
