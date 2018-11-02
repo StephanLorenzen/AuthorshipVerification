@@ -72,7 +72,7 @@ def model(dinfo):
 
     output = L.Dense(2, activation='softmax', name='output')(pruned)
 
-    model = Model(inputs=[known_in, unknown_in], outputs=output)
+    model = Model(inputs=[known_in, unknown_in], outputs=output, name='n4')
 
     optimizer = O.Adam(lr=0.0005)
 
