@@ -8,7 +8,7 @@ import argparse
 # Local imports
 import helpers.data as avdata
 import helpers.util as util
-from networks import n1,n2,n3,n4
+from networks import n1,n2,n3,n4,n5
 
 def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     dinfo = avdata.DataInfo(dataset)
@@ -21,6 +21,8 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
         model = n3.model(dinfo)
     elif network == 'n4':
         model = n4.model(dinfo)
+    elif network == 'n5':
+        model = n5.model(dinfo)
 
     print(model.summary())
     
@@ -41,7 +43,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Catching Ghost Writers, YO!')
     parser.add_argument('-n', '--network', metavar='NETWORK', type=str,
-        choices=['n1', 'n2', 'n3', 'n4'],
+        choices=['n1', 'n2', 'n3', 'n4', 'n5'],
         help='Network to use.')
     parser.add_argument('-d', '--data', metavar='DATA', type=str,
         choices=['PAN13', 'MaCom'], default='MaCom',

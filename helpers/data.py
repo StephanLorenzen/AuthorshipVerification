@@ -49,7 +49,7 @@ class DataInfo:
             return res
 
         assert len(self._channels) == len(data)
-
+        
         res = []
         for i,c in enumerate(self._channels):
             if c == 'char':
@@ -181,7 +181,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
             if uid not in res:
                 res[uid] = []
             res[uid].append(val)
-
+    
     for auth,vals in res.items():
         zipped = []
         for i in range(len(vals[0])):
@@ -227,7 +227,7 @@ def generate_stats(datafile, dataset="MaCom"):
                     pmap[p] = 0
                 pmap[p] += 1
     data = None
-
+    
     print("Post processing")
     cmap = list(cmap.items())
     cmap = [x for x in cmap if x[1] > dinfo.char_freq_cutoff*ctot]
@@ -259,13 +259,16 @@ def load_stats(dataset="MaCom"):
         for i,l in enumerate(f):
             l = l.split(";")
             cmap[l[0]] = i+1
+        assert len(cmap) > 0
     with open(path+'wmap.txt', 'r', encoding="utf8") as f:
         for i,l in enumerate(f):
             l = l.split(";")
             wmap[l[0]] = i+1
+        assert len(wmap) > 0
     with open(path+'pmap.txt', 'r', encoding="utf8") as f:
         for i,l in enumerate(f):
             l = l.split(";")
             pmap[l[0]] = i+1
+        assert len(pmap) > 0
     return cmap, wmap, pmap
 
