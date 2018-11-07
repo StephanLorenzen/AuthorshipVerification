@@ -18,9 +18,9 @@ def model(dinfo):
     dinfo.channels(('char','word','pos'))
 
     # Siamese part of network
-    char_embd = L.Embedding(dinfo.channel_size('char'), 5)
-    word_embd = L.Embedding(dinfo.channel_size('word'), 8)
-    pos_embd  = L.Embedding(dinfo.channel_size('pos'), 3)
+    char_embd = L.Embedding(dinfo.channel_size('char'), 5, name='char_embedding')
+    word_embd = L.Embedding(dinfo.channel_size('word'), 8, name='word_embedding')
+    pos_embd  = L.Embedding(dinfo.channel_size('pos'), 3, name='pos_embedding')
 
     char_conv = L.Convolution1D(
         filters=400,
@@ -86,5 +86,3 @@ def model(dinfo):
             )
 
     return model
-
-

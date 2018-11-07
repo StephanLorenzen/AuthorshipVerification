@@ -4,6 +4,7 @@ from keras.callbacks import Callback
 import numpy as np
 
 import argparse
+import importlib
 
 # Local imports
 import helpers.data as avdata
@@ -30,17 +31,9 @@ if __name__ == "__main__":
 
     dinfo = avdata.DataInfo(repo)
     
-    if network == 'n1':
-        model = n1.model(dinfo)
-    elif network == 'n2':
-        model = n2.model(dinfo)
-    elif network == 'n3':
-        model = n3.model(dinfo)
-    elif network == 'n4':
-        model = n4.model(dinfo)
-    elif network == 'n5':
-        model = n5.model(dinfo)
-   
+    nmod = importlib.import_module('networks.'+network)
+    model = nmod.model(dinfo)
+
     fname = 'store/'+repo+'/'+network+'-'+str(epoch)+'.h5'
     print("Loading network ("+fname+")")
     

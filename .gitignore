@@ -5,5 +5,7 @@ data/PAN13/raw/test/*
 data/PAN13/raw/transform.py
 store/*
 
+visualize/*
+
 __pycache__
 *.pyc
