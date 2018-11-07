@@ -30,13 +30,29 @@ def train(datafile, valdatafile=None, dataset="MaCom", network='n1'):
     vdatagen = None
     if valdatafile is not None:
         vdatagen = avdata.DataGenerator(dinfo, valdatafile)
-    
+   
     model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1,
                             callbacks=[util.Checkpoint(dataset)])
     
 def test(datafile, dataset="MaCom"):
     pass
 
+def get_weights(network, iteration, dataset='MaCom'):
+    dinfo = avdata.DataInfo(dataset)
+    
+    if network == 'n1':
+        model = n1.model(dinfo)
+    elif network == 'n2':
+        model = n2.model(dinfo)
+    elif network == 'n3':
+        model = n3.model(dinfo)
+    elif network == 'n4':
+        model = n4.model(dinfo)
+    elif network == 'n5':
+        model = n5.model(dinfo)
+   
+    model.load_weights("store/"+dataset+"/n2-2.h5")
+    import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":
