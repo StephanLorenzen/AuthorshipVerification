@@ -78,8 +78,7 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
             percent += 10
 
         l = l.strip().split(';')
-        uid = l[0]
-        text = l[2]
+        uid, ts, text = l
         ctext = clean(text)
         
         if uid not in authors:
@@ -93,11 +92,11 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
         
         if profile["remove_first"]:
             ctext = ctext[200:]
-                    
+         
         if len(ctext) > text_upper_threshold or len(ctext) < text_lower_threshold:
             continue
             
-        authors[uid].append(text)
+        authors[uid].append((ts,text))
     print("100%\n")
         
 cauth = 0
@@ -105,8 +104,8 @@ texts = []
 for k,ls in authors.items():
     if len(ls) > author_num_texts_threshold:
         cauth += 1
-        for t in ls:
-            texts.append((k,t))
+        for ts,txt in ls:
+            texts.append((k,ts,txt))
 
 print("Total number of texts: "+str(len(texts))+"/"+str(length))
 print("Total number of authors: "+str(cauth)+"/"+str(len(authors)))
@@ -115,11 +114,12 @@ authors = None
 ############# Extract features
 print("\nExtracting features...")
 length = len(texts)
+timestamps = []
 ntexts = []
 words = []
 pos   = []
 percent = 0
-for i,(uid,text) in enumerate(texts):
+for i,(uid,ts,text) in enumerate(texts):
     if float(100*i)/float(len(texts)) > percent:
         percent = int(float(100*i)/float(len(texts)))
         print(str(percent)+"%")
@@ -156,6 +156,7 @@ for i,(uid,text) in enumerate(texts):
                     
     text = unclean(text)
     
+    timestamps.append((uid,ts))
     ntexts.append((uid,text))
     words.append((uid, " ".join(wlist)))
     pos.append((uid, " ".join(plist)))
@@ -164,8 +165,12 @@ print("100%\n")
 texts = ntexts
 
 print("\nSaving...")
-with open(path_pro+dfile+'.csv', 'w', encoding='utf8') as ftext, open(path_pro+dfile+'_words.csv', 'w', encoding='utf8') as fword, open(path_pro+dfile+'_pos.csv', 'w', encoding='utf8') as fpos:
-    for (uid, text), (_, words), (_, pos) in zip(texts, words, pos):
+with open(path_pro+dfile+'_ts.csv', 'w', encoding='utf8') as fts,\
+        open(path_pro+dfile+'.csv', 'w', encoding='utf8') as ftext,\
+        open(path_pro+dfile+'_words.csv', 'w', encoding='utf8') as fword,\
+        open(path_pro+dfile+'_pos.csv', 'w', encoding='utf8') as fpos:
+    for (uid, ts), (_, text), (_, words), (_, pos) in zip(timestamps, texts, words, pos):
+        fts.write(uid+";"+ts+"\n")
         ftext.write(uid+";"+text+"\n")
         fword.write(uid+";"+words+"\n")
         fpos.write(uid+";"+pos+"\n")
