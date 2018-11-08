@@ -3,6 +3,7 @@ import helpers.util as util
 import numpy as np
 import keras
 import configparser
+import re
 
 from keras.preprocessing import sequence
 
@@ -213,6 +214,7 @@ def generate_stats(datafile, dataset="MaCom"):
             print(str(per)+"%")
             per+=10
         for txt,wrd,pos in authdata:
+            txt = re.sub(r'\$PROPN\$', '', txt)
             ctot += len(txt)
             wtot += len(wrd)
             for c in txt:

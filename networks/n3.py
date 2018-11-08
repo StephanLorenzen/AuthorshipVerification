@@ -14,9 +14,10 @@ def absdiff(A,B):
 
 def model(dinfo):
     dinfo.channels(('char',))
+    dinfo.batch_size(32)
 
     # Siamese part of network
-    char_embd = L.Embedding(dinfo.channel_size('char'), 5)
+    char_embd = L.Embedding(dinfo.channel_size('char'), 5, name='char_embedding')
     word_embd = L.Embedding(dinfo.channel_size('word'), 8)
     #TODO POS-input
 

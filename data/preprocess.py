@@ -1,5 +1,5 @@
 # preprocess
-
+import re
 import sys
 import numpy
 from polyglot.text import Text
@@ -9,6 +9,7 @@ PROFILES = {
             "lang":"en",
             "dir":"PAN13",
             "remove_first":False,
+            "remove_names":False,
             "txt_max_length": 10000,
             "txt_min_length": 200,
             "txt_max_length_sentence": 500,
@@ -18,13 +19,22 @@ PROFILES = {
             "lang":"da",
             "dir":"MaCom",
             "remove_first":True,
-            "txt_max_length": 10000,
+            "remove_names":True,
+            "txt_max_length": 30000,
             "txt_min_length": 200,
             "txt_max_length_sentence": 500,
             "author_min_num": 5
             }
         }
 
+def clean(txt):
+    txt = re.sub(r'\$NL\$', '\n', txt)
+    txt = re.sub(r'\$SC\$', ';', txt)
+    return txt
+def unclean(txt):
+    txt = re.sub(r'\n', '$NL$', txt)
+    txt = re.sub(r';', '$SC$', txt)
+    return txt
 
 if len(sys.argv) != 3:
     print('Wrong number of args...')
@@ -70,20 +80,21 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
         l = l.strip().split(';')
         uid = l[0]
         text = l[2]
+        ctext = clean(text)
         
         if uid not in authors:
             authors[uid] = []
         
-        polytext = Text(text, hint_language_code=profile["lang"])
+        polytext = Text(ctext, hint_language_code=profile["lang"])
         sentences = polytext.sentences
         
         if len(sentences) > text_sentence_threshold:
             continue
         
         if profile["remove_first"]:
-            text = text[200:] #len(polytext.sentences[0]):]
-        
-        if len(text) > text_upper_threshold or len(text) < text_lower_threshold:
+            ctext = ctext[200:]
+                    
+        if len(ctext) > text_upper_threshold or len(ctext) < text_lower_threshold:
             continue
             
         authors[uid].append(text)
@@ -104,6 +115,7 @@ authors = None
 ############# Extract features
 print("\nExtracting features...")
 length = len(texts)
+ntexts = []
 words = []
 pos   = []
 percent = 0
@@ -113,15 +125,44 @@ for i,(uid,text) in enumerate(texts):
         print(str(percent)+"%")
         percent += 1
     
-    text = text.replace('$NL$', ' ')
+    text = clean(text)
     
-    polytext = Text(text, hint_language_code='en')
+    polytext = Text(text, hint_language_code=profile["lang"])
     postags = polytext.pos_tags
-
-    words.append((uid, " ".join([x[0] for x in postags])))
-    pos.append((uid, " ".join([x[1] for x in postags])))
+    
+    if profile['remove_names']:
+        i = 0
+        ntext = ''
+        for (word, tag) in postags:
+            l = len(word)
+            #import pdb; pdb.set_trace()
+            while text[i:i+l] != word:
+                ntext += text[i]
+                i += 1
+            if tag == 'PROPN':
+                # Remove
+                word = '$PROPN$'
+            ntext += word
+            #pdb.set_trace()
+            i += l
+        text = ntext
+    
+    wlist = [(x[0] if x[1] != 'PROPN' else '$PROPN$') for x in postags]
+    plist = [x[1] for x in postags]
+    if profile["remove_first"]:
+        text = text[200:]
+        wlist = wlist[20:]
+        plist = plist[20:]
+                    
+    text = unclean(text)
+    
+    ntexts.append((uid,text))
+    words.append((uid, " ".join(wlist)))
+    pos.append((uid, " ".join(plist)))
 print("100%\n")
     
+texts = ntexts
+
 print("\nSaving...")
 with open(path_pro+dfile+'.csv', 'w', encoding='utf8') as ftext, open(path_pro+dfile+'_words.csv', 'w', encoding='utf8') as fword, open(path_pro+dfile+'_pos.csv', 'w', encoding='utf8') as fpos:
     for (uid, text), (_, words), (_, pos) in zip(texts, words, pos):
