@@ -17,8 +17,8 @@ def model(dinfo):
     dinfo.batch_size(8)
 
     # Siamese part of network
-    char_embd = L.Embedding(dinfo.channel_size('char'), 5)
-    word_embd = L.Embedding(dinfo.channel_size('word'), 8)
+    char_embd = L.Embedding(dinfo.channel_size('char'), 5, name='char_embedding')
+    word_embd = L.Embedding(dinfo.channel_size('word'), 8, name='word_embedding')
 
     char_conv = L.Convolution1D(
         filters=500,
@@ -36,7 +36,6 @@ def model(dinfo):
     char_pool = L.GlobalMaxPooling1D(name='char_pool')
     word_pool = L.GlobalMaxPooling1D(name='word_pool')
 
-    reweight = L.Dense(400, activation='relu', name='reweight')
     dropout  = L.Dropout(0.4)
 
     inls  = []
@@ -50,9 +49,9 @@ def model(dinfo):
         c_out = char_pool(char_conv(char_embd(c_in)))
         w_out = word_pool(word_conv(word_embd(w_in)))
     
-        #concat = dropout(reweight(L.concatenate([c_out,w_out])))
-        concat = dropout(L.concatenate([c_out,w_out]))
-        
+        #concat = dropout(L.concatenate([c_out,w_out]))
+        concat = L.concatenate([c_out,w_out])
+
         outls.append(concat)
 
 

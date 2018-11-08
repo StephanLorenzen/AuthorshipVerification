@@ -133,6 +133,7 @@ class DataGenerator(keras.utils.Sequence):
         for idx, (_, label) in enumerate(ids):
             y[idx] = label
 
+        # Encode output label: y=0 => [1,0], y=1 => [0,1]
         return X, keras.utils.to_categorical(y, num_classes=2)
 
     def prep_channel(self, cidx, ids):
