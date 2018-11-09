@@ -244,7 +244,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
     channels = channels if not incl_ts else ['ts']+list(channels)
     for c in channels:
         if c == 'ts':
-            chres = load_channel(path+datafile+"_ts.csv", fun=lambda x: int(x))
+            chres = load_channel(path+datafile+"_ts.csv")
         elif c == 'char':
             chres = load_channel(path+datafile+'.csv', fun=util.clean)
         elif c == 'word':

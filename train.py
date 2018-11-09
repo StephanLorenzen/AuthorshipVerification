@@ -34,6 +34,9 @@ if __name__ == "__main__":
     model = nmod.model(dinfo)
 
     print(model.summary())
+    print("Training on "+str(trainset))
+    print("Validating on "+str(valset))
+    print("Batch size = "+str(dinfo.batch_size()))
     
     datagen = avdata.SiameseGenerator(dinfo, trainset)
     vdatagen = None
