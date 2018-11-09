@@ -8,7 +8,7 @@ import re
 from keras.preprocessing import sequence
 
 class DataInfo:
-    def __init__(self, dataset):
+    def __init__(self, dataset, load_maps=True):
         config = configparser.ConfigParser()
         config.read('data/'+str(dataset)+"/info.ini")
         config = config['Info']
@@ -22,7 +22,10 @@ class DataInfo:
         self.char_freq_cutoff = float(config.get('char_freq_cutoff', 0.0))
         self.word_freq_cutoff = float(config.get('word_freq_cutoff', 0.0))
 
-        self.cmap, self.wmap, self.pmap = load_stats(dataset)
+        if load_maps:
+            self.cmap, self.wmap, self.pmap = load_stats(dataset)
+        else:
+            self.cmap, self.wmap, self.pmap = dict(), dict(), dict()
 
         self._channels = []
         self._batch_size = 32
@@ -62,7 +65,7 @@ class DataInfo:
         
         return tuple(res)
 
-class DataGenerator(keras.utils.Sequence):
+class SiameseGenerator(keras.utils.Sequence):
     def __init__(self, datainfo, filename, shuffle=True):
         self.datainfo = datainfo
         self.shuffle  = shuffle
@@ -78,7 +81,8 @@ class DataGenerator(keras.utils.Sequence):
     def get_data(self, filename):
         self.data = []
         self.authors = []
-        auths = list(load_data(filename, self.datainfo.dataset, self.datainfo.channels()).items())
+        auths = list(load_data(filename, self.datainfo.dataset,
+            self.datainfo.channels(), incl_ts=False).items())
         
         for (uid, data) in auths:
             processed = []
@@ -156,7 +160,7 @@ class DataGenerator(keras.utils.Sequence):
 
 
 # streams = 'char', 'words', 'tokens'
-def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
+def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts=True):
     res = dict()
     path = "data/"+dataset+"/processed/"
     def load_channel(fname, fun=None):
@@ -171,8 +175,11 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
         return chres
 
     res = dict()
+    channels = channels if not incl_ts else ['ts']+list(channels)
     for c in channels:
-        if c == 'char':
+        if c == 'ts':
+            chres = load_channel(path+datafile+"_ts.csv", fun=lambda x: int(x))
+        elif c == 'char':
             chres = load_channel(path+datafile+'.csv', fun=util.clean)
         elif c == 'word':
             chres = load_channel(path+datafile+'_words.csv', fun=lambda x: x.split(' '))
@@ -196,7 +203,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos')):
     return res
 
 def generate_stats(datafile, dataset="MaCom"):
-    dinfo = DataInfo(dataset)
+    dinfo = DataInfo(dataset, load_maps=False)
     print("Loading data")
     data = load_data(datafile, dataset)
     print("Creating channels")
@@ -213,7 +220,7 @@ def generate_stats(datafile, dataset="MaCom"):
         if float(i)/float(l)*100 > per:
             print(str(per)+"%")
             per+=10
-        for txt,wrd,pos in authdata:
+        for _,txt,wrd,pos in authdata:
             txt = re.sub(r'\$PROPN\$', '', txt)
             ctot += len(txt)
             wtot += len(wrd)
@@ -247,7 +254,8 @@ def generate_stats(datafile, dataset="MaCom"):
     path = "data/"+dataset+"/processed/"
     with open(path+'cmap.txt', 'w', encoding="utf8") as f:
         for c in cmap:
-            f.write(str(c[0])+";"+str(c[1])+"\n")
+            ch = c[0] if c[0] != '\n' else '$NL$'
+            f.write(str(ch)+";"+str(c[1])+"\n")
     with open(path+'wmap.txt', 'w', encoding="utf8") as f:
         for w in wmap:
             f.write(str(w[0])+";"+str(w[1])+"\n")
@@ -261,6 +269,7 @@ def load_stats(dataset="MaCom"):
     with open(path+'cmap.txt', 'r', encoding="utf8") as f:
         for i,l in enumerate(f):
             l = l.split(";")
+            ch = l[0] if l[0] != '$NL$' else '\n'
             cmap[l[0]] = i+1
         assert len(cmap) > 0
     with open(path+'wmap.txt', 'r', encoding="utf8") as f:

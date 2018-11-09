@@ -30,6 +30,9 @@ PROFILES = {
 def clean(txt):
     txt = re.sub(r'\$NL\$', '\n', txt)
     txt = re.sub(r'\$SC\$', ';', txt)
+    txt = ''.join([i if ord(i) < 128 else ' ' for i in txt])
+    #txt = re.sub(r'\U00100078', '', txt)
+    #txt = re.sub(r'\uf020', '', txt)
     return txt
 def unclean(txt):
     txt = re.sub(r'\n', '$NL$', txt)
@@ -135,7 +138,6 @@ for i,(uid,ts,text) in enumerate(texts):
         ntext = ''
         for (word, tag) in postags:
             l = len(word)
-            #import pdb; pdb.set_trace()
             while text[i:i+l] != word:
                 ntext += text[i]
                 i += 1
@@ -143,11 +145,10 @@ for i,(uid,ts,text) in enumerate(texts):
                 # Remove
                 word = '$PROPN$'
             ntext += word
-            #pdb.set_trace()
             i += l
         text = ntext
     
-    wlist = [(x[0] if x[1] != 'PROPN' else '$PROPN$') for x in postags]
+    wlist = [(x[0] if not profile['remove_names'] or x[1] != 'PROPN' else '$PROPN$') for x in postags]
     plist = [x[1] for x in postags]
     if profile["remove_first"]:
         text = text[200:]

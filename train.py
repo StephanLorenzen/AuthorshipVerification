@@ -35,10 +35,10 @@ if __name__ == "__main__":
 
     print(model.summary())
     
-    datagen = avdata.DataGenerator(dinfo, trainset)
+    datagen = avdata.SiameseGenerator(dinfo, trainset)
     vdatagen = None
     if valset is not None:
-        vdatagen = avdata.DataGenerator(dinfo, valset)
+        vdatagen = avdata.SiameseGenerator(dinfo, valset)
    
     model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1,
                             callbacks=[util.Checkpoint(datarepo)])
