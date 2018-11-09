@@ -158,6 +158,72 @@ class SiameseGenerator(keras.utils.Sequence):
         
         return np.array(known), np.array(unknown)
 
+class AVGenerator(keras.utils.Sequence):
+    def __init__(self, datainfo, filename):
+        self.datainfo = datainfo
+        self.authors  = []
+        self.data     = []
+        self.problems = []
+        
+        self.get_data(filename)
+        self.construct_problems()
+   
+    def get_data(self, filename):
+        self.authors = []
+        auths = list(load_data(filename, self.datainfo.dataset,
+            self.datainfo.channels(), incl_ts=True).items())
+        
+        for (uid, data) in auths:
+            texts = []
+            data.sort(key=lambda x: x[0])
+            for d in data:
+                ts = d[0]
+                proc = self.datainfo.encode(d[1:])
+                texts.append((ts, proc))
+            self.authors.append(texts)
+
+    def construct_problems(self, prob=0.5):
+        self.problems = []
+        sprob = 1.0/(1.0-prob)-1.0
+        for aidx, _ in enumerate(self.authors):
+            self.problems.append((aidx,aidx,-1))
+            if np.random.rand() < sprob:
+                oidx = aidx
+                while oidx == aidx:
+                    oidx = np.random.randint(0,len(self.authors))
+                self.problems.append((aidx,oidx,np.random.randint(0, len(self.authors[oidx]))))
+
+    def __len__(self):
+        return len(self.problems)
+
+    def __getitem__(self, index):
+        (a1idx,a2idx,tidx) = self.problems[index]
+        label = 1 if a1idx == a2idx else 0
+        knowns  = self.authors[a1idx][:-1]
+        unknown = self.authors[a2idx][tidx]
+
+        ts = [x[0] for x in knowns]
+        X = self.__data_generation(knowns, unknown)
+        
+        return (ts, X, label)
+
+    def __data_generation(self, knowns, unknown):
+        X = dict()
+        unknown = unknown[1]
+        knowns  = [x[1] for x in knowns]
+        for cidx,c in enumerate(self.datainfo.channels()):
+            k, u = self.prep_channel(cidx, knowns, unknown)
+            X['known_'+c+'_in'] = k
+            X['unknown_'+c+'_in'] = u
+        return X
+
+    def prep_channel(self, cidx, knowns, unknown):
+        k, u = [x[cidx] for x in knowns], [unknown[cidx]]*len(knowns)
+        
+        k = sequence.pad_sequences(k, value=0, padding='post')
+        u = sequence.pad_sequences(u, value=0, padding='post')
+        
+        return np.array(k), np.array(u)
 
 # streams = 'char', 'words', 'tokens'
 def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts=True):

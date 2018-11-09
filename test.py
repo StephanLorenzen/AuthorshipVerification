@@ -2,6 +2,7 @@
 import tensorflow as tf
 from keras.callbacks import Callback
 import numpy as np
+import os
 
 import argparse
 import importlib
@@ -39,4 +40,22 @@ if __name__ == "__main__":
     
     model.load_weights(fname)
 
+    print("Creating generator for "+str(testset))
+    gen = avdata.AVGenerator(dinfo, testset)
+    res = []
+    per = 0
+    for i, (ts, X, label) in enumerate(gen):
+        if i >= per*len(gen):
+            print(str(round(per*100))+'%')
+            per += max(0.01, 1.0/len(gen))
+        ys = model.predict(X)
+        res.append((ts,ys,label))
+
+    path = 'predsys/'+repo+'/'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    with open(path+network+'-'+testset+'.csv', 'w') as out:
+        for (ts,ys,label) in res:
+            out.write(str(label)+';'+';'.join([(str(t)+','+str(y[1])) for t,y in zip(ts,ys)])+'\n')
+            
 

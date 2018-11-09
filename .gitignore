@@ -4,6 +4,7 @@ data/PAN13/raw/train/*
 data/PAN13/raw/test/*
 data/PAN13/raw/transform.py
 store/*
+predsys/*
 
 visualize/*
 
