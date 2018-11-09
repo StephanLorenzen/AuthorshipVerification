@@ -66,16 +66,16 @@ class DataInfo:
         return tuple(res)
 
 class SiameseGenerator(keras.utils.Sequence):
-    def __init__(self, datainfo, filename, shuffle=True):
+    def __init__(self, datainfo, filename, shuffle=True, subsample=None):
         self.datainfo = datainfo
         self.shuffle  = shuffle
+        self.subsample = subsample
         self.authors  = []
         self.data     = []
         self.problems = []
         
         self.get_data(filename)
-        self.construct_problems()
-        #import pdb; pdb.set_trace() 
+        self.construct_problems() 
         self.on_epoch_end()
    
     def get_data(self, filename):
@@ -109,7 +109,7 @@ class SiameseGenerator(keras.utils.Sequence):
         random.shuffle(self.problems)
 
     def __len__(self):
-        return int(np.floor(len(self.problems) / self.datainfo.batch_size()))
+        return int(np.floor(len(self.indexes) / self.datainfo.batch_size()))
 
     def __getitem__(self, index):
         # Generate indexes of the batch
@@ -126,6 +126,9 @@ class SiameseGenerator(keras.utils.Sequence):
         self.indexes = np.arange(len(self.problems))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
+            ssp = self.subsample
+            if ssp is not None:
+                self.indexes = self.indexes[:int(ssp*len(self.indexes))]
 
     def __data_generation(self, ids):
         X = dict()

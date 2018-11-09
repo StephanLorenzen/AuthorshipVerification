@@ -19,6 +19,8 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
         choices=['PAN13', 'MaCom'], default='MaCom',
         help='Data repository to use.')
+    parser.add_argument('-sub', '--subsample', metavar='PROB', type=float,
+        help='Fraction of training data to use in each epoch.')
     parser.add_argument('TRAINSET', type=str, help='Training set file.')
     parser.add_argument('VALSET', type=str, default=None, help='Validation set file.')
 
@@ -27,6 +29,7 @@ if __name__ == "__main__":
     datarepo = args.datarepo
     valset = args.VALSET
     trainset = args.TRAINSET
+    subsample = args.subsample
 
     dinfo = avdata.DataInfo(datarepo)
     
@@ -38,7 +41,7 @@ if __name__ == "__main__":
     print("Validating on "+str(valset))
     print("Batch size = "+str(dinfo.batch_size()))
     
-    datagen = avdata.SiameseGenerator(dinfo, trainset)
+    datagen = avdata.SiameseGenerator(dinfo, trainset, subsample=subsample)
     vdatagen = None
     if valset is not None:
         vdatagen = avdata.SiameseGenerator(dinfo, valset)
