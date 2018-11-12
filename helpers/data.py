@@ -182,7 +182,6 @@ class AVGenerator(keras.utils.Sequence):
             data.sort(key=lambda x: x[0])
             for d in data:
                 ts = d[0]
-                ts = datetime.datetime.strptime(s, "%Y-%m-%d").timestamp()
                 proc = self.datainfo.encode(d[1:])
                 texts.append((ts, proc))
             self.authors.append(texts)
@@ -249,7 +248,8 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
     channels = channels if not incl_ts else ['ts']+list(channels)
     for c in channels:
         if c == 'ts':
-            chres = load_channel(path+datafile+"_ts.csv")
+            chres = load_channel(path+datafile+"_ts.csv",
+                        fun=lambda x: int(datetime.datetime.strptime(x, '%Y-%m-%d').timestamp()))
         elif c == 'char':
             chres = load_channel(path+datafile+'.csv', fun=util.clean)
         elif c == 'word':
