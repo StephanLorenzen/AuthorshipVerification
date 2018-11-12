@@ -4,6 +4,7 @@ import numpy as np
 import keras
 import configparser
 import re
+import datetime
 
 from keras.preprocessing import sequence
 
@@ -178,6 +179,7 @@ class AVGenerator(keras.utils.Sequence):
             data.sort(key=lambda x: x[0])
             for d in data:
                 ts = d[0]
+                ts = datetime.datetime.strptime(s, "%Y-%m-%d").timestamp()
                 proc = self.datainfo.encode(d[1:])
                 texts.append((ts, proc))
             self.authors.append(texts)
