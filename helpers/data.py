@@ -249,7 +249,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
     for c in channels:
         if c == 'ts':
             chres = load_channel(path+datafile+"_ts.csv",
-                        fun=lambda x: int(datetime.datetime.strptime(x, '%Y-%m-%d').timestamp()))
+                        fun=lambda x: int(datetime.datetime.strptime(x, '%d-%m-%Y').timestamp()))
         elif c == 'char':
             chres = load_channel(path+datafile+'.csv', fun=util.clean)
         elif c == 'word':
