@@ -10,10 +10,9 @@ import importlib
 # Local imports
 import helpers.data as avdata
 import helpers.util as util
-from networks import n1,n2,n3,n4,n5
 
 def cut(X, batch_size):
-    keys = X.keys()
+    keys = list(X.keys())
     l = len(X[keys[0]])
     if l <= batch_size:
         return [X]
@@ -22,8 +21,10 @@ def cut(X, batch_size):
     while l > 0:
         sX = dict()
         for k in keys:
-            sX[k] = X[k][i*batchsize:(i+1)*batch_size]
+            sX[k] = X[k][i*batch_size:(i+1)*batch_size]
         res.append(sX)
+        i += 1
+        l -= batch_size
     return res
 
 
@@ -64,9 +65,9 @@ if __name__ == "__main__":
             print(str(round(per*100))+'%')
             per += max(0.01, 1.0/len(gen))
         Xs = cut(X, dinfo.batch_size())
-        ys = []
+        ys = np.empty((0,2))
         for x in Xs:
-            ys += model.predict(X)
+            ys = np.vstack([ys, model.predict(x)])
         res.append((ts,ys,label))
 
     path = 'predsys/'+repo+'/'

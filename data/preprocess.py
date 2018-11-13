@@ -148,7 +148,7 @@ for i,(uid,ts,text) in enumerate(texts):
             i += l
         text = ntext
     
-    wlist = [(x[0] if not profile['remove_names'] or x[1] != 'PROPN' else '$PROPN$') for x in postags]
+    wlist = [(unclean(x[0]) if not profile['remove_names'] or x[1] != 'PROPN' else '$PROPN$') for x in postags]
     plist = [x[1] for x in postags]
     if profile["remove_first"]:
         text = text[200:]
