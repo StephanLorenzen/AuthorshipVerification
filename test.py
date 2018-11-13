@@ -12,6 +12,21 @@ import helpers.data as avdata
 import helpers.util as util
 from networks import n1,n2,n3,n4,n5
 
+def cut(X, batch_size):
+    keys = X.keys()
+    l = len(X[keys[0]])
+    if l <= batch_size:
+        return [X]
+    res = []
+    i = 0
+    while l > 0:
+        sX = dict()
+        for k in keys:
+            sX[k] = X[k][i*batchsize:(i+1)*batch_size]
+        res.append(sX)
+    return res
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Testing how to catch Ghost Writers, YO!')
@@ -48,7 +63,10 @@ if __name__ == "__main__":
         if i >= per*len(gen):
             print(str(round(per*100))+'%')
             per += max(0.01, 1.0/len(gen))
-        ys = model.predict(X)
+        Xs = cut(X, dinfo.batch_size())
+        ys = []
+        for x in Xs:
+            ys += model.predict(X)
         res.append((ts,ys,label))
 
     path = 'predsys/'+repo+'/'
