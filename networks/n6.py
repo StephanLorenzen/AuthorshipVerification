@@ -37,7 +37,7 @@ def model(dinfo):
     char_pool = L.GlobalMaxPooling1D(name='char_pool')
     word_pool = L.GlobalMaxPooling1D(name='word_pool')
 
-    pos_rnn = L.RNN(200, name='rnn_lstm')
+    pos_rnn = L.GRU(200, activation='relu', name='rnn_lstm')
 
     inls  = []
     outls = []
