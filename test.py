@@ -31,7 +31,7 @@ def cut(X, batch_size):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Testing how to catch Ghost Writers, YO!')
-    parser.add_argument('NETWORK', type=str, choices=['n1', 'n2', 'n3', 'n4', 'n5'],
+    parser.add_argument('NETWORK', type=str, choices=['n1', 'n2', 'n3', 'n4', 'n5', 'n6'],
             help='Network to use.')
     parser.add_argument('-e', '--epoch', metavar='EPOCH', type=str, default='final',
             help='Epoch network to use.')

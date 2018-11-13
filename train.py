@@ -14,7 +14,7 @@ from networks import n1,n2,n3,n4,n5
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Catching Ghost Writers, YO!')
-    parser.add_argument('NETWORK', type=str, choices=['n1', 'n2', 'n3', 'n4', 'n5'],
+    parser.add_argument('NETWORK', type=str, choices=['n1', 'n2', 'n3', 'n4', 'n5', 'n6'],
         help='Network to use.')
     parser.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
         choices=['PAN13', 'MaCom'], default='MaCom',
