@@ -46,19 +46,19 @@ if __name__ == "__main__":
             accuracy += 1 if pred == label else 0
         return float(accuracy) / len(problems)
 
-    delta = 0.5
+    for delta in np.arange(0.1, 1.0, 0.1):
+        print("############### delta = "+str(delta))
+        print("Evaluating min")
+        acc = eval_combine(combine.cmin, problems, delta)
+        print(" => Accuracy = "+str(acc))
 
-    print("Evaluating min")
-    acc = eval_combine(combine.cmin, problems, delta)
-    print(" => Accuracy = "+str(acc))
+        print("Evaluating max")
+        acc = eval_combine(combine.cmax, problems, delta)
+        print(" => Accuracy = "+str(acc))
 
-    print("Evaluating max")
-    acc = eval_combine(combine.cmax, problems, delta)
-    print(" => Accuracy = "+str(acc))
-
-    print("Evaluating exp")
-    for lamb in range(1,11):
-        acc = eval_combine(lambda seq: combine.exponential(seq, lamb/10), problems, delta)
-        print("Lambda = "+str(lamb/10)+" => Accuracy = "+str(acc))
+        print("Evaluating exp")
+        for lamb in range(1,11):
+            acc = eval_combine(lambda seq: combine.exponential(seq, lamb/10), problems, delta)
+            print("Lambda = "+str(lamb/10)+" => Accuracy = "+str(acc))
 
 

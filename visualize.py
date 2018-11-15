@@ -12,14 +12,14 @@ import helpers.data as avdata
 import helpers.util as util
 from networks import n1,n2,n3,n4,n5
 
-def get_weights(dinfo, epoch):
+def get_weights(dinfo, network, epoch):
     nmod = importlib.import_module('networks.'+network)
     
     mod = nmod.model(dinfo)
    
     print(mod.summary())
 
-    fname = 'store/'+dinfo.dataset+'/n2-'+str(epoch)+'.h5'
+    fname = 'store/'+dinfo.dataset+'/'+network+'-'+str(epoch)+'.h5'
     print("Loading weights ("+fname+")")
     mod.load_weights(fname)
 
@@ -34,7 +34,7 @@ def get_weights(dinfo, epoch):
         if len(ws) == 0 or len(ws) >= 3:
             continue
         
-        with open(outdir+'n2-'+name+".csv", 'w') as f:
+        with open(outdir+network+'-'+name+".csv", 'w') as f:
             f.write('Weights\n')
             for w in ws[0]:
                 f.write(';'.join([str(x) for x in w])+"\n")
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
         choices=['PAN13', 'MaCom'], default='MaCom',
         help='Data repository to use (default MaCom).')
-    parser.add_argument('NETWORK', type=str, choices=['n1', 'n2', 'n3', 'n4', 'n5'],
+    parser.add_argument('NETWORK', type=str,
         help='Network to use.')
     parser.add_argument('-e', '--epoch', metavar='EPOCH', type=str, default='final',
             help='Epoch network to use.')
@@ -66,5 +66,5 @@ if __name__ == "__main__":
     dinfo = avdata.DataInfo(repo)
     
     if mode == 'get_weights':
-        get_weights(dinfo, epoch)
+        get_weights(dinfo, network, epoch)
 
