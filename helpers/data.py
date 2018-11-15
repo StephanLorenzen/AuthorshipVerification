@@ -184,7 +184,7 @@ class AVGenerator(keras.utils.Sequence):
                 ts = d[0]
                 proc = self.datainfo.encode(d[1:])
                 texts.append((ts, proc))
-            self.authors.append(texts)
+            self.authors.append((uid, texts))
 
     def construct_problems(self, prob=0.5):
         self.problems = []
@@ -203,13 +203,14 @@ class AVGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         (a1idx,a2idx,tidx) = self.problems[index]
         label = 1 if a1idx == a2idx else 0
-        knowns  = self.authors[a1idx][:-1]
-        unknown = self.authors[a2idx][tidx]
+        uid     = self.authors[a1idx][0]
+        knowns  = self.authors[a1idx][1][:-1]
+        unknown = self.authors[a2idx][1][tidx]
 
         ts = [x[0] for x in knowns]
         X = self.__data_generation(knowns, unknown)
         
-        return (ts, X, label)
+        return (uid, ts, X, label)
 
     def __data_generation(self, knowns, unknown):
         X = dict()
