@@ -21,6 +21,8 @@ if __name__ == "__main__":
         help='Data repository to use.')
     parser.add_argument('-sub', '--subsample', metavar='PROB', type=float,
         help='Fraction of training data to use in each epoch.')
+    parser.add_argument('-stat', '--computestats', action='store_const', const=True, default=False,
+        help='Compute stats on TRAINSET.')
     parser.add_argument('TRAINSET', type=str, help='Training set file.')
     parser.add_argument('VALSET', type=str, default=None, help='Validation set file.')
 
@@ -30,6 +32,12 @@ if __name__ == "__main__":
     valset = args.VALSET
     trainset = args.TRAINSET
     subsample = args.subsample
+    compstat = args.computestats
+
+    if compstat:
+        print("Generating statistics")
+        avdata.generate_stats(trainset, datarepo)
+        print("Done!")
 
     dinfo = avdata.DataInfo(datarepo)
     
