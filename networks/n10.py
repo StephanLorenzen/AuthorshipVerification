@@ -9,8 +9,6 @@ import random
 # Local imports
 import helpers.data as avdata
 
-def l1(A,B):
-   return K.sum(K.abs(A-B),axis=1,keepdims=True)
 def absdiff(A,B):
     return K.abs(A-B)
 
@@ -23,30 +21,35 @@ def model(dinfo):
     word_embd = L.Embedding(dinfo.channel_size('word'), 8, name='word_embedding')
     pos_embd  = L.Embedding(dinfo.channel_size('pos'), 2, name='pos_embedding')
 
-    char_conv = L.Convolution1D(
+    char_conv4 = L.Convolution1D(
         filters=500,
-        kernel_size=8,
+        kernel_size=4,
         strides=1,
         activation='relu',
-        name='char_conv')
-    word_conv = L.Convolution1D(
+        name='char_conv4')
+    word_conv3 = L.Convolution1D(
         filters=500,
-        kernel_size=5,
+        kernel_size=3,
         strides=1,
         activation='relu',
-        name='word_conv')
-    pos_conv = L.Convolution1D(
-            filters=5,
-            kernel_size=4,
+        name='word_conv3')
+    pos_conv3 = L.Convolution1D(
+            filters=500,
+            kernel_size=3,
             strides=1,
             activation='relu',
-            name='pos_conv')
+            name='pos_conv3')
+    pos_conv6 = L.Convolution1D(
+            filters=500,
+            kernel_size=3,
+            strides=1,
+            activation='relu',
+            name='pos_conv6')
             
-    char_pool = L.GlobalMaxPooling1D(name='char_pool')
-    word_pool = L.GlobalMaxPooling1D(name='word_pool')
-    pos_pool = L.GlobalMaxPooling1D(name='pos_pool')
-
-    pos_lstm = L.LSTM(100, name='pos_lstm')
+    char_pool4 = L.GlobalMaxPooling1D(name='char_pool4')
+    word_pool3 = L.GlobalMaxPooling1D(name='word_pool3')
+    pos_pool3 = L.GlobalMaxPooling1D(name='pos_pool3')
+    pos_pool6 = L.GlobalMaxPooling1D(name='pos_pool6')
 
     inls  = []
     outls = []
@@ -57,24 +60,26 @@ def model(dinfo):
         inls.append(c_in)
         inls.append(w_in)
         inls.append(p_in)
+        
+        c_out4 = char_pool4(char_conv4(char_embd(c_in)))
+        w_out3 = word_pool3(word_conv3(word_embd(w_in)))
+        p_out3 = pos_pool3(pos_conv3(pos_embd(p_in)))
+        p_out6 = pos_pool6(pos_conv6(pos_embd(p_in)))
 
-        c_out = char_pool(char_conv(char_embd(c_in)))
-        w_out = word_pool(word_conv(word_embd(w_in)))
-        #p_out = pos_pool(pos_conv(pos_embd(p_in)))
-        p_out = pos_lstm(pos_embd(p_in))
-
-        #concat = reweight(L.concatenate([c_out,w_out,p_out]))
-        concat = L.concatenate([c_out,w_out,p_out])
+        concat = L.concatenate([c_out4,w_out3,p_out3,p_out6])
         
         outls.append(concat)
-
-
-    #dist = L.Lambda(lambda x:l1(x[0],x[1]), output_shape=lambda in_shp: (in_shp[0][0],1), name='distance')(outls)   
+   
     dist = L.Lambda(lambda x:absdiff(x[0],x[1]), output_shape=lambda in_shp: in_shp, name='distance')(outls)
-        
-    output = L.Dense(2, activation='softmax', name='output')(dist)
+       
+    dense1 = L.Dense(500, activation='relu')(dist)
+    dense2 = L.Dense(500, activation='relu')(dense1)
+    dense3 = L.Dense(500, activation='relu')(dense2)
+    dense4 = L.Dense(500, activation='relu')(dense3)
 
-    model = Model(inputs=inls, outputs=[output], name='n2')
+    output = L.Dense(2, activation='softmax', name='output')(dense4)
+
+    model = Model(inputs=inls, outputs=[output], name='n8')
 
     optimizer = O.Adam(lr=0.0005)
 

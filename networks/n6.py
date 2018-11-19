@@ -19,16 +19,16 @@ def model(dinfo):
     # Siamese part of network
     char_embd = L.Embedding(dinfo.channel_size('char'), 5, name='char_embedding')
     word_embd = L.Embedding(dinfo.channel_size('word'), 8, name='word_embedding')
-    pos_embd  = L.Embedding(dinfo.channel_size('pos'), 3, name='pos_embedding')
+    pos_embd  = L.Embedding(dinfo.channel_size('pos'), 2, name='pos_embedding')
 
     char_conv = L.Convolution1D(
-        filters=400,
+        filters=500,
         kernel_size=8,
         strides=1,
         activation='relu',
         name='char_conv')
     word_conv = L.Convolution1D(
-        filters=400,
+        filters=500,
         kernel_size=5,
         strides=1,
         activation='relu',
@@ -37,7 +37,7 @@ def model(dinfo):
     char_pool = L.GlobalMaxPooling1D(name='char_pool')
     word_pool = L.GlobalMaxPooling1D(name='word_pool')
 
-    pos_rnn = L.GRU(200, activation='relu', name='rnn_lstm')
+    pos_rnn = L.GRU(50, activation='relu', name='pos_rnn')
 
     inls  = []
     outls = []
@@ -63,7 +63,7 @@ def model(dinfo):
         
     output = L.Dense(2, activation='softmax', name='output')(dist)
 
-    model = Model(inputs=inls, outputs=[output], name='n2')
+    model = Model(inputs=inls, outputs=[output], name='n6')
 
     optimizer = O.Adam(lr=0.0005)
 
