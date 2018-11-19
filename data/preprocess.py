@@ -103,7 +103,6 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
     print("100%\n")
 
 print("Removing duplicates")
-authors = dict()
 cdup = 0
 cnodup = 0
 for k,ls in list(authors.items()):
