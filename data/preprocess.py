@@ -101,7 +101,28 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
             
         authors[uid].append((ts,text))
     print("100%\n")
-        
+
+print("Removing duplicates")
+authors = dict()
+cdup = 0
+cnodup = 0
+for k,ls in list(authors.items()):
+    newls = []
+    flag = set()
+    cdup += len(ls)
+    cnodup += len(ls)
+    for ts,text in ls:
+        if text in flag:
+            cnodup -= 1
+            continue
+        flag.add(text)
+        newls.append((ts,text))
+
+    authors[k] = newls
+
+print("Removed "+str(cdup-cnodup)+" duplicates ("+str(cnodup)+"/"+str(cdup)+")")
+print("")
+
 cauth = 0
 texts = []
 for k,ls in authors.items():
