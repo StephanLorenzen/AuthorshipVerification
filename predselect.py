@@ -31,9 +31,9 @@ if __name__ == "__main__":
         problems = []
         for l in f:
             l = l.strip().split(';')
-            label = (l[0]=='1')
+            label = (l[1]=='1')
             preds = []
-            for p in l[1:]:
+            for p in l[2:]:
                 time,score = p.split(',')
                 preds.append((int(time),float(score)))
             problems.append((label, preds))
