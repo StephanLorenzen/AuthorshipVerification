@@ -4,7 +4,7 @@
 import keras.layers as L
 import keras.optimizers as O
 from keras.models import Model
-
+import os
 
 def model(dinfo):
     dinfo.channels(('char',))
@@ -72,7 +72,8 @@ def model(dinfo):
 
     output = L.Dense(2, activation='softmax', name='output')(pruned)
 
-    model = Model(inputs=[known_in, unknown_in], outputs=output, name='n4')
+    mname = os.path.basename(__file__)[:-3]
+    model = Model(inputs=[known_in, unknown_in], outputs=output, name=mname)
 
     optimizer = O.Adam(lr=0.0005)
 

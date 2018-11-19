@@ -5,6 +5,7 @@ import keras.backend as K
 import keras.optimizers as O
 from keras.models import Model
 import random
+import os
 
 # Local imports
 import helpers.data as avdata
@@ -63,7 +64,8 @@ def model(dinfo):
         
     output = L.Dense(2, activation='softmax', name='output')(dist)
 
-    model = Model(inputs=inls, outputs=[output], name='n6')
+    mname = os.path.basename(__file__)[:-3]
+    model = Model(inputs=inls, outputs=[output], name=mname)
 
     optimizer = O.Adam(lr=0.0005)
 
