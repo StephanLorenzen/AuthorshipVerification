@@ -37,8 +37,8 @@ if __name__ == "__main__":
             label = (l[1]=='1')
             preds = []
             for p in l[2:]:
-                time,score = p.split(',')
-                preds.append((int(time),float(score)))
+                time,length,score = p.split(',')
+                preds.append((int(time),int(length),float(score)))
             problems.append((label, preds))
 
     def eval_combine(fun, problems, fname):

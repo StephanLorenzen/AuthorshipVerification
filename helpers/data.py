@@ -182,8 +182,9 @@ class AVGenerator(keras.utils.Sequence):
             data.sort(key=lambda x: x[0])
             for d in data:
                 ts = d[0]
+                ls = len(d[1])
                 proc = self.datainfo.encode(d[1:])
-                texts.append((ts, proc))
+                texts.append((ts, ls, proc))
             self.authors.append((uid, texts))
 
     def construct_problems(self, prob=0.5):
@@ -208,14 +209,15 @@ class AVGenerator(keras.utils.Sequence):
         unknown = self.authors[a2idx][1][tidx]
 
         ts = [x[0] for x in knowns]
+        ls = [x[1] for x in knowns]
         X = self.__data_generation(knowns, unknown)
         
-        return (uid, ts, X, label)
+        return (uid, ts, ls, X, label)
 
     def __data_generation(self, knowns, unknown):
         X = dict()
-        unknown = unknown[1]
-        knowns  = [x[1] for x in knowns]
+        unknown = unknown[2]
+        knowns  = [x[2] for x in knowns]
         for cidx,c in enumerate(self.datainfo.channels()):
             k, u = self.prep_channel(cidx, knowns, unknown)
             X['known_'+c+'_in'] = k
