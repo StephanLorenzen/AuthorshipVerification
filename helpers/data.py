@@ -8,6 +8,8 @@ import datetime
 
 from keras.preprocessing import sequence
 
+POS_REDUCED_MAP = {'NOUN':1,'VERB':2,'PRON':3,'ADJ':4,'ADV':5}
+
 class DataInfo:
     def __init__(self, dataset, load_maps=True):
         config = configparser.ConfigParser()
@@ -42,7 +44,11 @@ class DataInfo:
         return self._batch_size
 
     def channel_size(self,channel):
-        return {'char':len(self.cmap),'word':len(self.wmap),'pos':len(self.pmap)}[channel]+1
+        return {'char':len(self.cmap),
+                'word':len(self.wmap),
+                'pos':len(self.pmap),
+                'pos-reduced':len(POS_REDUCED_MAP)
+                }[channel]+1
 
     def encode(self, data):
         def _encode(stream, mp, upper=None, df=0):
@@ -63,7 +69,8 @@ class DataInfo:
                 res.append(_encode(data[i], self.wmap, self.word_max_length))
             elif c == 'pos':
                 res.append(_encode(data[i], self.pmap, self.pos_max_length))
-        
+            elif c == 'pos-reduced':
+                res.append(_encode(data[i], POS_REDUCED_MAP, self.pos_max_length))
         return tuple(res)
 
 class SiameseGenerator(keras.utils.Sequence):
@@ -259,7 +266,11 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
             chres = load_channel(path+datafile+'_words.csv', fun=lambda x: x.split(' '))
         elif c == 'pos':
             chres = load_channel(path+datafile+'_pos.csv', fun=lambda x: x.split(' '))
-            
+        elif c == 'pos_reduced':
+            def posfilter(x):
+                return list(filter(lambda y: y in POS_REDUCED_MAP, x.split(' ')))
+            chres = load_channel(path+datefile+'_pos.csv', fun=posfilter)
+
         for uid, val in chres.items():
             if uid not in res:
                 res[uid] = []
@@ -344,6 +355,7 @@ def load_stats(dataset="MaCom"):
         for i,l in enumerate(f):
             l = l.split(";")
             ch = l[0] if l[0] != '$NL$' else '\n'
+            ch = ch if ch != '$SC$' else ';'
             cmap[l[0]] = i+1
         assert len(cmap) > 0
     with open(path+'wmap.txt', 'r', encoding="utf8") as f:
