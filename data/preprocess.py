@@ -33,7 +33,7 @@ def clean(txt):
     txt = ''.join([i if ord(i) < 128 else ' ' for i in txt])
     #txt = re.sub(r'\U00100078', '', txt)
     #txt = re.sub(r'\uf020', '', txt)
-    return txt
+    return txt.strip()
 def unclean(txt):
     txt = re.sub(r'\n', '$NL$', txt)
     txt = re.sub(r';', '$SC$', txt)
@@ -83,6 +83,9 @@ with open(path_raw+dfile+'.csv', 'r', encoding="utf8") as f:
         l = l.strip().split(';')
         uid, ts, text = l
         ctext = clean(text)
+        
+        if len(ctext) == 0:
+            continue
         
         if uid not in authors:
             authors[uid] = []
