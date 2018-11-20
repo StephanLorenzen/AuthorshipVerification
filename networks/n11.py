@@ -14,7 +14,7 @@ import helpers.data as avdata
 def absdiff(A,B):
     return K.abs(A-B)
 def absdiffsig(A,B):
-    return Act.sigmoid(K.abs(A-B))
+    return Act.tanh(K.abs(A-B))
 
 def model(dinfo):
     dinfo.channels(('char','word','pos'))
