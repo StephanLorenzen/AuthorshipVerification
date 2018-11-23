@@ -38,6 +38,8 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
         choices=['PAN13', 'MaCom'], default='MaCom',
         help='Data repository to use (default MaCom).')
+    parser.add_argument('-no', '--networkonly', action='store_const', const=True, default=False,
+        help='Evaluate network only.')
     parser.add_argument('TESTSET', type=str, help='Test set file.')
 
     args = parser.parse_args()
@@ -45,6 +47,7 @@ if __name__ == "__main__":
     epoch = args.epoch
     repo = args.datarepo
     testset = args.TESTSET
+    netonly = args.networkonly
 
     dinfo = avdata.DataInfo(repo)
     
@@ -56,25 +59,32 @@ if __name__ == "__main__":
     
     model.load_weights(fname)
 
-    print("Creating generator for "+str(testset))
-    gen = avdata.AVGenerator(dinfo, testset)
-    res = []
-    per = 0
-    for i, (uid, ts, ls, X, label) in enumerate(gen):
-        if i >= per*len(gen):
-            print(str(round(per*100))+'%')
-            per += max(0.01, 1.0/len(gen))
-        Xs = cut(X, dinfo.batch_size())
-        ys = np.empty((0,2))
-        for x in Xs:
-            ys = np.vstack([ys, model.predict(x)])
-        res.append((uid,ts,ls,ys,label))
+    if netonly:
+        print("Creating SIM-generator for "+str(testset))
+        gen = avdata.SiameseGenerator(dinfo, testset)
+        loss, accuracy = model.evaluate_generator(generator=gen)
+        print("=> Loss: "+str(loss))
+        print("=> Accuracy: "+str(accuracy))
+    else:
+        print("Creating AV-generator for "+str(testset))
+        gen = avdata.AVGenerator(dinfo, testset)
+        res = []
+        per = 0
+        for i, (uid, ts, ls, X, label) in enumerate(gen):
+            if i >= per*len(gen):
+                print(str(round(per*100))+'%')
+                per += max(0.01, 1.0/len(gen))
+            Xs = cut(X, dinfo.batch_size())
+            ys = np.empty((0,2))
+            for x in Xs:
+                ys = np.vstack([ys, model.predict(x)])
+            res.append((uid,ts,ls,ys,label))
 
-    path = 'predsys/'+repo+'/'
-    if not os.path.exists(path):
-        os.makedirs(path)
-    with open(path+network+'-'+testset+'.csv', 'w') as out:
-        for (uid,ts,ls,ys,label) in res:
-            out.write(str(uid)+";"+str(label)+';'+';'.join([(str(t)+','+str(l)+','+str(y[1])) for t,l,y in zip(ts,ls,ys)])+'\n')
+        path = 'predsys/'+repo+'/'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        with open(path+network+'-'+testset+'.csv', 'w') as out:
+            for (uid,ts,ls,ys,label) in res:
+                out.write(str(uid)+";"+str(label)+';'+';'.join([(str(t)+','+str(l)+','+str(y[1])) for t,l,y in zip(ts,ls,ys)])+'\n')
             
 
