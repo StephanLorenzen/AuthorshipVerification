@@ -8,7 +8,7 @@ import datetime
 
 from keras.preprocessing import sequence
 
-POS_REDUCED_MAP = {'NOUN':1,'VERB':2,'PRON':3,'ADJ':4,'ADV':5}
+POS_REDUCED_MAP = {'NOUN':1,'VERB':2,'PRON':3,'ADJ':4,'ADP':5,'ADV':6,'PROPN':7,'CONJ':8}
 
 class DataInfo:
     def __init__(self, dataset, load_maps=True):
@@ -21,6 +21,7 @@ class DataInfo:
         self.text_max_length = int(config.get('text_max_length', -1))
         self.word_max_length = int(config.get('word_max_length', -1))
         self.pos_max_length  = int(config.get('pos_max_length', self.word_max_length))
+        self.pos_sample_prob = float(config.get('pos_sample_prob', 0.1))
 
         self.char_freq_cutoff = float(config.get('char_freq_cutoff', 0.0))
         self.word_freq_cutoff = float(config.get('word_freq_cutoff', 0.0))
@@ -47,7 +48,8 @@ class DataInfo:
         return {'char':len(self.cmap),
                 'word':len(self.wmap),
                 'pos':len(self.pmap),
-                'pos-reduced':len(POS_REDUCED_MAP)
+                'pos-reduced':len(POS_REDUCED_MAP),
+                'pos-sampled':len(POS_REDUCED_MAP)
                 }[channel]+1
 
     def encode(self, data):
@@ -71,6 +73,14 @@ class DataInfo:
                 res.append(_encode(data[i], self.pmap, self.pos_max_length))
             elif c == 'pos-reduced':
                 res.append(_encode(data[i], POS_REDUCED_MAP, self.pos_max_length))
+            elif c == 'pos-sampled':
+                pos = _encode(data[i], POS_REDUCED_MAP, self.pos_max_length)
+                pos_sampled = []
+                seql = 5
+                while len(pos_sampled) < self.pos_max_length*self.pos_sample_prob:
+                    j = random.randint(0,len(pos)-seql)
+                    pos_sampled += pos[j:j+seql]
+                res.append(pos_sampled)
         return tuple(res)
 
 class SiameseGenerator(keras.utils.Sequence):
@@ -256,6 +266,8 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
 
     res = dict()
     channels = channels if not incl_ts else ['ts']+list(channels)
+    def posfilter(x):
+        return list(filter(lambda y: y in POS_REDUCED_MAP, x.split(' ')))
     for c in channels:
         if c == 'ts':
             chres = load_channel(path+datafile+"_ts.csv",
@@ -267,8 +279,8 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
         elif c == 'pos':
             chres = load_channel(path+datafile+'_pos.csv', fun=lambda x: x.split(' '))
         elif c == 'pos_reduced':
-            def posfilter(x):
-                return list(filter(lambda y: y in POS_REDUCED_MAP, x.split(' ')))
+            chres = load_channel(path+datefile+'_pos.csv', fun=posfilter)
+        elif c == 'pos_sampled':
             chres = load_channel(path+datefile+'_pos.csv', fun=posfilter)
 
         for uid, val in chres.items():
