@@ -23,6 +23,8 @@ if __name__ == "__main__":
         help='Fraction of training data to use in each epoch.')
     parser.add_argument('-stat', '--computestats', action='store_const', const=True, default=False,
         help='Compute stats on TRAINSET.')
+    parser.add_argument('-r', '--restart', metavar='EPOCH', type=int, default=0,
+        help='Restart from given epoch.')
     parser.add_argument('TRAINSET', type=str, help='Training set file.')
     parser.add_argument('VALSET', type=str, default=None, help='Validation set file.')
 
@@ -33,6 +35,7 @@ if __name__ == "__main__":
     trainset = args.TRAINSET
     subsample = args.subsample
     compstat = args.computestats
+    restart = args.restart
 
     if compstat:
         print("Generating statistics")
@@ -49,10 +52,15 @@ if __name__ == "__main__":
     print("Validating on "+str(valset))
     print("Batch size = "+str(dinfo.batch_size()))
     
+    if restart > 0:
+        print("Restarting from epoch "+str(restart))
+        fname = 'store/'+datarepo+'/'+network+'-'+str(restart)+'.h5'
+        model.load_weights(fname)
+
     datagen = avdata.SiameseGenerator(dinfo, trainset, subsample=subsample)
     vdatagen = None
     if valset is not None:
         vdatagen = avdata.SiameseGenerator(dinfo, valset)
    
     model.fit_generator(generator=datagen, validation_data=vdatagen, epochs=40, verbose=1,
-                            callbacks=[util.Checkpoint(datarepo)])
+                            callbacks=[util.Checkpoint(datarepo, restart)])
