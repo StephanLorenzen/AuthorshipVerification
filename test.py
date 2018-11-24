@@ -62,6 +62,7 @@ if __name__ == "__main__":
     if netonly:
         print("Creating SIM-generator for "+str(testset))
         gen = avdata.SiameseGenerator(dinfo, testset)
+        print("Evaluating...")
         loss, accuracy = model.evaluate_generator(generator=gen)
         print("=> Loss: "+str(loss))
         print("=> Accuracy: "+str(accuracy))
