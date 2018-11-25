@@ -4,144 +4,147 @@ import numpy as np
 
 import helpers.data as avdata
 
-datarepo = 'PAN13'
-train = 'train'
-test = 'test'
+datarepo = 'MaCom'
+train = 'B'
+test = 'D'
 numfeat = 150
-checkK = 10
-
-dinfo = avdata.DataInfo(datarepo)
-
-def stats(ls):
-    mp = dict()
-    for _,t in ls:
-        for w in t:
-            if w not in mp:
-                mp[w] = 0
-            mp[w] += 1
-    top = sorted(list(mp.items()), key=lambda x: -x[1])
-    return [x[0] for x in top[:numfeat]]
-
-def encode(t, feats):
-    mp = dict([(f,0) for f in feats])
-    for w in t:
-        if w in mp:
-            mp[w] += 1
-    res = []
-    for f in feats:
-        res.append(mp[f])
-    return np.array(res)
+checkK = 8
 
 authors = avdata.load_data(train, datarepo, ('word',), False)
-authors = [v for _,v in authors.items()]
-alltexts = []
+authors = [[x[0] for x in v] for _,v in authors.items()]
+alltxt  = []
 for a,v in enumerate(authors):
-    alltexts += [(a,t[0]) for t in v]
-    checkK = min((len(v)-1)*2,checkK)
-authors = dict()
-for i,(a,_) in enumerate(alltexts):
-    if a not in authors:
-        authors[a] = []
-    authors[a].append(i)
+    for t in v:
+        alltxt.append((a,t))
 
-feats = stats(alltexts)
+# Compute word freq in db
+mp = dict()
+for _,t in alltxt:
+    for w in t:
+        if w not in mp:
+            mp[w] = 0
+        mp[w] += 1
+top = sorted(list(mp.items()), key=lambda x: -x[1])
+FEATURES = [x[0] for x in top[:numfeat]]
 
-train = [(a,encode(t, feats)) for a,t in alltexts]
+def freq(txt, mp):
+    freqs = dict([(w,0) for w in mp])
+    for w in txt:
+        if w in freqs:
+            freqs[w] += 1
+    return np.array([freqs[w] for w in mp])
 
-def dist(t1, t2):
-    return np.sum(np.abs(t1-t2))
-def predict(unknown, author, other, ks=[3]):
-    als = []
-    for _,t in author:
-        als.append((1,dist(unknown[1],t)))
-    for _,t in other:
-        als.append((0,dist(unknown[1],t)))
-    als.sort(key=lambda x: x[1])
-    res = [0.0]*max(ks)
-    for k in range(max(ks)):
-        res[k] = res[k-1] if k > 0 else 0.0
-        res[k] += als[k][0]
-        res[k] = round(res[k]/(k+1)+0.00001)
-    ret = []
-    for k in ks:
-        ret.append(res[k-1])
-    return ret
-def eval_delta(problems, data, ks=[3]):
-    P = [[0]*6 for _ in ks]
-    for (authorIdx,otherIdx) in problems:
-        author = [data[i] for i in authorIdx[:-1]]
-        other  = [data[i] for i in otherIdx[:-1]]
-        good   = data[authorIdx[-1]]
-        bad    = data[otherIdx[-1]]
-        ps1 = predict(good, author, other, ks)
-        ps0 = predict(bad, author, other, ks)
-        for i,k in enumerate(ks):
-            stat = P[i] # PF, PT, TP, FP, TN, FN
-            p1 = ps1[i]
-            p0 = ps0[i]
-            stat[p1] += 1 # PF/PT
-            stat[p0] += 1 # PF/PT
-            if p1 == 1:
-                stat[2] += 1 # TP
-            else:
-                stat[5] += 1 # FN
-            if p0 == 0:
-                stat[4] += 1 # TN
-            else:
-                stat[3] += 1 # FP
-    for stat in P:
-        stat.append(float(stat[2]+stat[4])/(2*len(problems))) # Accuracy = (TP+TN) / #problems
-        stat.append(float(stat[5])/float(stat[5]+stat[4])) # FAR = (FN/(TN+FN))
-    return P
-
-print("Selecting K")
-problems = []
-for a,v in authors.items():
-    n = len(v)
-    other = random.sample([i for i,(o,_) in enumerate(alltexts) if o!=a], n)
-    problems.append((v,other))
+def meanAndStd(txts, ws):
+    mean = np.zeros(len(ws))
+    for t in txts:
+        mean += freq(t,ws)
+    mean /= len(txts)
     
-ks = list(range(1,checkK))
-res = eval_delta(problems, train, ks)
-best = 0
-for i,r in enumerate(res):
-    print(str(ks[i])+" ==> "+str(r))
-    if r[-2] > res[best][-2]:
-        best = i
-print("Best = "+str(ks[best])+" : "+str(res[best]))
-print("")
+    var = np.zeros(len(ws))
+    for t in txts:
+        tmp = (freq(t,ws)-mean)
+        var += np.multiply(tmp,tmp)
+    var /= len(txts)
+    var = np.sqrt(var)
+    
+    return mean,var
 
-print('Testing...')
+DBMEAN, DBSTD = meanAndStd([x[1] for x in alltxt], FEATURES)
+
+authormeta = []
+for i,v in enumerate(authors):
+    amean,astd = meanAndStd(v[:-1], FEATURES)
+    az = (amean - DBMEAN) / DBSTD
+    authormeta.append(az)
+
+# Create problem instances
+def get_problems(authors):
+    probs = []
+    for a, txts in enumerate(authors):
+        good = txts[-1]
+        txts = txts[:-1]
+        bada = a
+        while bada == a:
+            bada = random.randint(0,len(authors)-1)
+        bad  = random.choice(authors[bada])
+        probs.append((a, good, bad))
+    return probs
+
+problems = get_problems(authors)
+
+def evaluate(delta, problems, authormeta):
+    T,F,PT,PF,TN,FN,TP,FP = 0,0,0,0,0,0,0,0
+    for (a, good, bad) in problems:
+        az = authormeta[a]
+        fgood = freq(good, FEATURES)
+        zgood = (fgood-DBMEAN) / DBSTD
+        fbad  = freq(bad, FEATURES)
+        zbad  = (fbad-DBMEAN) / DBSTD
+        
+        goodans = np.sum(np.abs(az-zgood)) / len(FEATURES)
+        badans  = np.sum(np.abs(az-zbad))  / len(FEATURES)
+
+        goodans = (goodans < delta)
+        badans  = (badans < delta)
+        
+        T += 1
+        F += 1
+        
+        if goodans:
+            PT += 1
+            TP += 1
+        else:
+            PF += 1
+            FN += 1
+        if badans:
+            PT += 1
+            FP += 1
+        else:
+            PF += 1
+            TN += 1
+    
+    Acc = (TP+TN) / float(T+F)
+    FAR = FN / float(TN+FN) if TN+FN > 0 else 0.0
+    return (T,F,PT,PF,TN,FN,TP,FP,Acc,FAR)
+
+
+best = 0.0
+bestacc = 0.0
+with open('baseline/delta_train.csv', 'w') as f:
+    f.write('delta;T;F;PT;PF;TN;FN;TP;FP:Accuracy;FAR\n');
+    for delta in np.arange(0.1,5.1,0.1):
+        out = evaluate(delta, problems, authormeta)
+        f.write(str(delta)+';'+';'.join([str(x) for x in out])+'\n')
+        (T,F,PT,PF,TN,FN,TP,FP,Acc,FAR) = out
+        if Acc > bestacc:
+            bestacc = Acc
+            best = delta
+
+print('Best delta found = '+str(best)+", acc = "+str(bestacc))
+
 authors = avdata.load_data(test, datarepo, ('word',), False)
-authors = [v for _,v in authors.items()]
-alltexts = []
+authors = [[x[0] for x in v] for _,v in authors.items()]
+alltxt  = []
 for a,v in enumerate(authors):
-    alltexts += [(a,t[0]) for t in v]
-authors = dict()
-for i,(a,_) in enumerate(alltexts):
-    if a not in authors:
-        authors[a] = []
-    authors[a].append(i)
+    for t in v:
+        alltxt.append((a,t))
 
-test = [(a,encode(t, feats)) for a,t in alltexts]
+authormeta = []
+for i,v in enumerate(authors):
+    amean,astd = meanAndStd(v[:-1], FEATURES)
+    az = (amean - DBMEAN) / DBSTD
+    authormeta.append(az)
+    
+problems = get_problems(authors)
 
-problems = []
-for a,v in authors.items():
-    n = len(v)
-    other = random.sample([i for i,(o,_) in enumerate(alltexts) if o!=a], n)
-    problems.append((v,other))
+(T,F,PT,PF,TN,FN,TP,FP,Acc,FAR) = evaluate(best, problems, authormeta)
 
-k = [ks[best]]
-res = eval_delta(problems, test, k)
 print("Result")
-res = res[0] # PF, PT, TP, FP, TN, FN, acc, FAR
-print("=> Accuracy = "+str(res[-2]))
+print("=> Accuracy = "+str(Acc))
 print("=> Balance = 50/50")
-print("=> Preds (T/F) = ("+str(res[1])+"/"+str(res[0])+")")
-print("=> TP  = "+str(res[2]))
-print("=> FP  = "+str(res[3]))
-print("=> TN  = "+str(res[4]))
-print("=> FN  = "+str(res[5]))
-print("=> FAR = "+str(res[-1]))
-
-
+print("=> Preds (T/F) = ("+str(T)+"/"+str(F)+")")
+print("=> TP  = "+str(TP))
+print("=> FP  = "+str(FP))
+print("=> TN  = "+str(TN))
+print("=> FN  = "+str(FN))
+print("=> FAR = "+str(FAR))
