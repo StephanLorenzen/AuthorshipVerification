@@ -135,15 +135,23 @@ if __name__ == "__main__":
             results.append(['max']+r)
         
         print("Evaluating uniform")
-        res = eval_combine(combine.uniform, problems, outdir+'max.csv')
+        res = eval_combine(combine.uniform, problems, outdir+'uniform.csv')
         for r in res:
             results.append(['uniform']+r)
 
         print("Evaluating exp")
-        for lamb in np.arange(0.01, 0.5, 0.01):
-            res = eval_combine(lambda seq: combine.exponential(seq, lamb), problems, outdir+'exp-'+"{0:.2f}".format(lamb)+'.csv')
-            for r in res:
-                results.append(['exp'+'{0:.2f}'.format(lamb)]+r)
+        for lt in np.arange(0.00, 0.21, 0.01):
+            for ll in np.arange(0.00, 0.11, 0.01):
+                mname = 'exp-{0:.2f}-{1:.2f}'.format(lt,ll)
+                res = eval_combine(lambda seq: combine.exponential(seq, lt, ll),
+                        problems, outdir+mname+'.csv')
+                for r in res:
+                    results.append([mname]+r)
+
+        print("Evaluating majority")
+        res = eval_combine(combine.majority, problems, outdir+'majority.csv')
+        for r in res:
+            results.append(['majority']+r)
 
         with open(outdir+'summary.csv', 'w') as f:
             f.write('Threshold;Method;Delta;True;False;PredTrue;PredFalse;TP;FP;TN;FN;Accuracy;FAR\n')

@@ -10,15 +10,15 @@ def cmax(sequence):
 def uniform(sequence):
     return weighted(sequence, [1.0]*len(sequence))
 
-def exponential(sequence, lamb=0.1):
+def exponential(sequence, lt=0.0, ll=0.0):
     t0 = sequence[-1][0]
     times = [relative_months(x[0],t0) for x in sequence]
-    weights = [math.exp(-lamb*t) for t in times]
+    lengths = [x[1]/10000.0 for x in sequence]
+    weights = [math.exp(-lt*t+ll*l) for t,l in zip(times,lengths)]
     return weighted(sequence, weights)
 
-
-
-
+def majority(sequence):
+    return sum([(1 if x[2] > 0.5 else 0) for x in sequence]) / float(len(sequence))
 
 
 
