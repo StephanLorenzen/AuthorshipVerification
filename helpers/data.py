@@ -31,7 +31,7 @@ class DataInfo:
         else:
             self.cmap, self.wmap, self.pmap = dict(), dict(), dict()
 
-        self._channels = []
+        self._channels = ['char']
         self._batch_size = 32
 
     def channels(self, channels=None):
@@ -382,3 +382,34 @@ def load_stats(dataset="MaCom"):
         assert len(pmap) > 0
     return cmap, wmap, pmap
 
+
+def info(datafile, datarepo='MaCom'):
+    n_authors, n_txt, n_sim, n_av = 0, 0, 0, 0
+    avg_txt_author, avg_len_char, avg_len_word = 0.0, 0.0, 0.0
+
+    dinfo = DataInfo(datarepo)
+    
+    raw = load_data(datafile, dataset=datarepo, channels=('char','word'))
+    
+    n_authors = len(raw)
+    for (a,ls) in raw.items():
+        n_txt += len(ls)
+        for (t,c,w) in ls:
+            avg_len_char += len(c)
+            avg_len_word += len(w)
+
+    avg_len_char /= float(n_txt)
+    avg_len_word /= float(n_txt)
+    avg_txt_author = n_txt / float(n_authors)
+
+    print('#authors = '+str(n_authors))
+    print('#texts = '+str(n_txt))
+    print('Mean text length (char) = '+str(avg_len_char))
+    print('Mean text length (word) = '+str(avg_len_word))
+    print('Avg. text pr. author = '+str(avg_txt_author))
+
+    sgen = SiameseGenerator(dinfo,datafile)
+    print('#Sim = '+str(len(sgen)*dinfo.batch_size()))
+
+    agen = AVGenerator(dinfo,datafile)
+    print('#AV = '+str(len(agen)))
