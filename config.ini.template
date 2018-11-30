@@ -1,0 +1,4 @@
+[Config]
+path_storage = ~/.writing-style-analysis/
+path_data    = ~/.writing-style-analysis/data/
+datarepo     = PAN13

@@ -1,3 +1,5 @@
+config.ini
+
 data/MaCom/*
 data/PAN13/processed/*
 data/PAN13/raw/train/*

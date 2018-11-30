@@ -1,5 +1,15 @@
 import math
 
+def get_fun(func, lamb=1.0):
+    fun = lambda seq: exponential(seq, lamb)
+    if func == 'max':
+        fun = cmax
+    elif func == 'min':
+        fun = cmin
+    elif func == 'uniform':
+        fun = uniform
+    return fun
+
 ############### Combine functions
 def cmin(sequence):
     return min([x[2] for x in sequence])

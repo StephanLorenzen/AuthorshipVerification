@@ -1,30 +1,31 @@
 import random
-import helpers.util as util
 import numpy as np
 import keras
 import configparser
 import re
 import datetime
-
 from keras.preprocessing import sequence
+
+from . import util
 
 POS_REDUCED_MAP = {'NOUN':1,'VERB':2,'PRON':3,'ADJ':4,'ADP':5,'ADV':6,'PROPN':7,'CONJ':8}
 
 class DataInfo:
     def __init__(self, dataset, load_maps=True):
-        config = configparser.ConfigParser()
-        config.read('data/'+str(dataset)+"/info.ini")
-        config = config['Info']
+        dconfig = configparser.ConfigParser()
+        print(util.get_data_path(dataset)+"info.ini")
+        dconfig.read(util.get_data_path(dataset)+"info.ini")
+        dconfig = dconfig['Info']
 
         self.dataset = dataset
 
-        self.text_max_length = int(config.get('text_max_length', -1))
-        self.word_max_length = int(config.get('word_max_length', -1))
-        self.pos_max_length  = int(config.get('pos_max_length', self.word_max_length))
-        self.pos_sample_prob = float(config.get('pos_sample_prob', 0.1))
+        self.text_max_length = int(dconfig.get('text_max_length', -1))
+        self.word_max_length = int(dconfig.get('word_max_length', -1))
+        self.pos_max_length  = int(dconfig.get('pos_max_length', self.word_max_length))
+        self.pos_sample_prob = float(dconfig.get('pos_sample_prob', 0.1))
 
-        self.char_freq_cutoff = float(config.get('char_freq_cutoff', 0.0))
-        self.word_freq_cutoff = float(config.get('word_freq_cutoff', 0.0))
+        self.char_freq_cutoff = float(dconfig.get('char_freq_cutoff', 0.0))
+        self.word_freq_cutoff = float(dconfig.get('word_freq_cutoff', 0.0))
 
         if load_maps:
             self.cmap, self.wmap, self.pmap = load_stats(dataset)
@@ -249,10 +250,10 @@ class AVGenerator(keras.utils.Sequence):
         
         return np.array(k), np.array(u)
 
-# streams = 'char', 'words', 'tokens'
-def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts=True):
+# streams = 'char', 'word', 'pos', 'pos_sampled', 'pos_reduced'
+def load_data(datafile, dataset, channels=('char','word','pos'), incl_ts=True):
     res = dict()
-    path = "data/"+dataset+"/processed/"
+    path = util.get_data_path(dataset)+"processed/"
     def load_channel(fname, fun=None):
         chres = dict()
         with open(fname, 'r', encoding="utf8") as chan:
@@ -299,7 +300,7 @@ def load_data(datafile, dataset="MaCom", channels=('char','word','pos'), incl_ts
     
     return res
 
-def generate_stats(datafile, dataset="MaCom"):
+def generate_stats(datafile, dataset):
     dinfo = DataInfo(dataset, load_maps=False)
     print("Loading data")
     data = load_data(datafile, dataset)
@@ -347,8 +348,8 @@ def generate_stats(datafile, dataset="MaCom"):
     pmap = list(pmap.items())
     pmap.sort(key=lambda x:-x[1])
 
-    print("Wrtining maps")
-    path = "data/"+dataset+"/processed/"
+    print("Writing maps")
+    path = util.get_data_path(dataset)+"processed/"
     with open(path+'cmap.txt', 'w', encoding="utf8") as f:
         for c in cmap:
             ch = c[0] if c[0] != '\n' else '$NL$'
@@ -362,7 +363,7 @@ def generate_stats(datafile, dataset="MaCom"):
 
 def load_stats(dataset="MaCom"):
     cmap, wmap, pmap = dict(), dict(), dict()
-    path = "data/"+dataset+"/processed/"
+    path = util.get_data_path(dataset)+"processed/"
     with open(path+'cmap.txt', 'r', encoding="utf8") as f:
         for i,l in enumerate(f):
             l = l.split(";")
@@ -382,8 +383,7 @@ def load_stats(dataset="MaCom"):
         assert len(pmap) > 0
     return cmap, wmap, pmap
 
-
-def info(datafile, datarepo='MaCom'):
+def info(datafile, datarepo):
     n_authors, n_txt, n_sim, n_av = 0, 0, 0, 0
     avg_txt_author, avg_len_char, avg_len_word = 0.0, 0.0, 0.0
 
@@ -411,5 +411,5 @@ def info(datafile, datarepo='MaCom'):
     sgen = SiameseGenerator(dinfo,datafile)
     print('#Sim = '+str(len(sgen)*dinfo.batch_size()))
 
-    agen = AVGenerator(dinfo,datafile)
-    print('#AV = '+str(len(agen)))
+    #agen = AVGenerator(dinfo,datafile)
+    #print('#AV = '+str(len(agen)))
