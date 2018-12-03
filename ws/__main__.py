@@ -23,10 +23,12 @@ if __name__ == "__main__":
     ### CLUSTER
     parser_cluster = subparser.add_parser('cluster')
     parser_cluster.add_argument('NETWORK', type=str, help='Network to use.')
-    parser_cluster.add_argument('-e', '--epoch', metavar='EPOCH', type=str,
-            default='final', help='Epoch network to use.')
     parser_cluster.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
             default=config['datarepo'], help='Data repository to use.')
+    parser_cluster.add_argument('-dist', '--distance', metavar='DISTANCE', type=str,
+            default='l1', help='Distance function to use (default = l1).')
+    parser_cluster.add_argument('-k', '--num_clusters', metavar='K', type=int,
+            default=None, help='Number of clusters, runs select if none given.')
     parser_cluster.add_argument('DATASET', type=str, help='Data set.')
     
     ### PREDICT
