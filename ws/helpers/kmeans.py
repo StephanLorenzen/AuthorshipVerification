@@ -54,7 +54,7 @@ def select(ks, data, distfunc):
     errs = []
     print('Selecting k...')
     for k in ks:
-        err, _, _ = kmeans(data, k, distfunc)
+        err, _, _ = cluster(data, k, distfunc)
         errs.append(err)
         print('=> k = '+str(k)+', err = '+str(err))
     return list(zip(ks,errs))

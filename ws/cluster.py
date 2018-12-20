@@ -16,11 +16,10 @@ def cluster(args):
         for l in f:
             l = l.strip().split(';')
             instance = []
-            for elem in l:
+            for elem in l[1:]:
                 elem = elem.strip().split(',')
                 instance.append((float(elem[0]),float(elem[1])))
             data.append(np.array(instance))
-
     if k is None:
         kmeans.select(range(2,10), data, distance)
     else:

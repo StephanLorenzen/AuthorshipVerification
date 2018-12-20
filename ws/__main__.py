@@ -18,6 +18,8 @@ if __name__ == "__main__":
             default='final', help='Epoch network to use.')
     parser_comp.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
             default=config['datarepo'], help='Data repository to use.')
+    parser_comp.add_argument('-u', '--include_uid', action='store_const', const=True,
+            default=False, help='If set, author id is included in output file')
     parser_comp.add_argument('DATASET', type=str, help='Data set.')
 
     ### CLUSTER
