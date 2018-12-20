@@ -1,6 +1,6 @@
 import numpy as np
-
-from .helpers import util
+import random
+from .helpers import util, kmeans
 
 def cluster(args):
     network  = args.NETWORK
@@ -8,8 +8,6 @@ def cluster(args):
     dataset  = args.DATASET
     distance = args.distance
     k        = args.num_clusters
-
-    distfunc = util.l1
 
     # Load data
     path = util.get_path(repo, dataset, network)
@@ -20,17 +18,20 @@ def cluster(args):
             instance = []
             for elem in l:
                 elem = elem.strip().split(',')
-                #instance.append((int(elem[0]),float(elem[1])))
-                instance.append(float(elem[1]))
+                instance.append((float(elem[0]),float(elem[1])))
             data.append(np.array(instance))
-    
+
     if k is None:
-        util.kselect(range(2,10), data, util.l1)
+        kmeans.select(range(2,10), data, distance)
     else:
-        err, labels, centers = util.kmeans(data, k, util.l1, verbose=True)
+        err, labels, centers = kmeans.cluster(data, k, distance, verbose=True)
         cnt = [0]*k
-        for l in labels:
+        cl  = max([x.shape[0] for x in centers])+1
+        centercnt = [np.zeros(cl) for _ in range(k)]
+        for l,x in zip(labels,data):
             cnt[l] += 1
+            for j in range(x.shape[0]):
+                centercnt[l][j] += 1
 
         prefix = str(k)+'-'+str(distance)+"-"
         with open(path+prefix+'stats.txt', 'w') as f:
@@ -40,6 +41,6 @@ def cluster(args):
                 f.write(str(i)+':'+str(cnt[i])+'\n')
                 clust = centers[i]
                 with open(path+prefix+'c'+str(i)+'.csv', 'w') as cf:
-                    cf.write('idx;sim\n')
+                    cf.write('idx;sim;cnt\n')
                     for j in range(clust.shape[0]):
-                        cf.write(str(j)+';'+str(clust[j])+'\n')
+                        cf.write(str(j)+';'+str(clust[j])+';'+str(int(centercnt[i][j]))+'\n')
