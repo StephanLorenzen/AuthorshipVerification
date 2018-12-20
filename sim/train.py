@@ -25,7 +25,7 @@ def train(args):
         avdata.generate_stats(trainset, datarepo)
         print("Done!")
 
-    
+    dinfo = avdata.DataInfo(datarepo)
     nmod = importlib.import_module('.networks.'+network,package='sim')
     model = nmod.model(dinfo)
 
