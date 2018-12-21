@@ -7,9 +7,6 @@ from keras.models import Model
 import random
 import os
 
-# Local imports
-import helpers.data as avdata
-
 def l1(A,B):
    return K.sum(K.abs(A-B),axis=1,keepdims=True)
 def absdiff(A,B):
