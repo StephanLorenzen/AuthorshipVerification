@@ -29,7 +29,7 @@ def compute_centers(k, data, labels, distfunc):
             if count[j] == 0:
                 break
         centers[i] = center[:j]/count[:j]
-    return centers
+    return centers, counts
 
 def cluster(data, k, distname, maxiter=100, verbose=False):
     distfunc = wsdist.l1
@@ -42,19 +42,19 @@ def cluster(data, k, distname, maxiter=100, verbose=False):
         if verbose:
             print("Iteration #"+str(i))
         labels, err = assign_clusters(data, centers, distfunc)
-        centers = compute_centers(k, data, labels, distfunc)
+        centers, counts = compute_centers(k, data, labels, distfunc)
         if verbose:
             print("=> Error = "+str(err))
         if abs(perr-err) < 0.000001:
             break
         perr = err
-    return err, labels, centers
+    return err, labels, centers, counts
 
 def select(ks, data, distfunc):
     errs = []
     print('Selecting k...')
     for k in ks:
-        err, _, _ = cluster(data, k, distfunc)
+        err, _, _, _ = cluster(data, k, distfunc)
         errs.append(err)
         print('=> k = '+str(k)+', err = '+str(err))
     return list(zip(ks,errs))
