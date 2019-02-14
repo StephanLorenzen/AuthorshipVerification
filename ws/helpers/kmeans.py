@@ -33,7 +33,9 @@ def compute_centers(k, data, labels, distfunc):
 
 def cluster(data, k, distname, maxiter=100, verbose=False):
     distfunc = wsdist.l1
-   
+    if distname == 'l2':
+        distfunc = wsdist.l2
+
     data = util._interpolate(data) 
 
     centers = random.sample(data, k)
