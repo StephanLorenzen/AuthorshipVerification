@@ -46,8 +46,8 @@ def compute(args):
         sims = np.array(newsims)
 
         # First element is same - TODO check why this is not the case
-        sims[0,0] = 0.0
-        sims[0,1] = 1.0
+        #sims[0,0] = 0.0
+        #sims[0,1] = 1.0
 
         # prediction done, fix times
         
