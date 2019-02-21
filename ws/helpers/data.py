@@ -61,7 +61,7 @@ class WSGenerator(keras.utils.Sequence):
         elif self.mode == 'triple':
             head = [h[2] for h in author[:3]]
             tail = [x[2] for x in author for i in range(3)]
-            head = [x for x in head for _ in range(len(author))]
+            head = head * len(author)
         else:
             print('Unknown mode...')
             return None

@@ -36,7 +36,6 @@ def compute(args):
 
         sims = np.empty((0,2))
         for x in Xs:
-            #import pdb; pdb.set_trace()
             sims = np.vstack([sims, model.predict(x)])
 
         if mode == 'triple':
@@ -44,10 +43,6 @@ def compute(args):
             for i in range(len(ts)):
                 newsims.append(sum(sims[i:i+3])/3)
             sims = np.array(newsims)
-
-        # First element is same - TODO check why this is not the case
-        #sims[0,0] = 0.0
-        #sims[0,1] = 1.0
 
         # prediction done, fix times
         
