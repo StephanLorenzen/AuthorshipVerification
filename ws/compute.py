@@ -43,7 +43,7 @@ def compute(args):
             newsims = []
             for i in range(len(ts)):
                 newsims.append(sum(sims[i:i+3])/3)
-        sims = np.array(newsims)
+            sims = np.array(newsims)
 
         # First element is same - TODO check why this is not the case
         #sims[0,0] = 0.0
