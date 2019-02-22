@@ -20,8 +20,8 @@ if __name__ == "__main__":
             default=config['datarepo'], help='Data repository to use.')
     parser_comp.add_argument('-u', '--include_uid', action='store_const', const=True,
             default=False, help='If set, author id is included in output file')
-    parser_comp.add_argument('-m', '--mode', metavar='MODE', type=str,
-            default=config['mode'], choices=['first','second','triple'], help='Mode to use.')
+    parser_comp.add_argument('-c', '--num_compare', metavar='NUM_C', type=int,
+            default=config['num_compare'], help='Number of texts to use for initial ws assessment.')
     parser_comp.add_argument('DATASET', type=str, help='Data set.')
 
     ### CLUSTER
@@ -33,6 +33,9 @@ if __name__ == "__main__":
             default='l1', choices=['l1','l2'], help='Distance function to use (default = l1).')
     parser_cluster.add_argument('-k', '--num_clusters', metavar='K', type=int,
             default=None, help='Number of clusters, runs select if none given.')
+    parser_cluster.add_argument('-r', '--num_remove', metavar='NUM_R', type=int,
+            default=config['num_remove'],
+            help='Length of prefix to remove for each data point (typically = to mode).')
     parser_cluster.add_argument('DATASET', type=str, help='Data set.')
     
     ### PREDICT

@@ -8,6 +8,7 @@ def cluster(args):
     dataset  = args.DATASET
     distance = args.distance
     k        = args.num_clusters
+    nRemove  = max(args.num_remove, 0) # 0 <= nRemove  <= nCompare
 
     # Load data
     path = util.get_path(repo, dataset, network)
@@ -18,8 +19,15 @@ def cluster(args):
             instance = []
             for elem in l[1:]:
                 elem = elem.strip().split(',')
-                instance.append((float(elem[0]),float(elem[1])))
-            data.append(np.array(instance))
+                instance.append([float(elem[0]),float(elem[1])])
+            # Remove first nRemove elements 
+            if nRemove >= len(instance):
+                print("Warning: trying to remove too many elements. Skipping data point...")
+                continue
+            t0 = instance[nRemove][0]
+            for i in range(len(instance)):
+                instance[i][0]-=t0
+            data.append(np.array(instance[nRemove:]))
     if k is None:
         kmeans.select(range(2,10), data, distance)
     else:

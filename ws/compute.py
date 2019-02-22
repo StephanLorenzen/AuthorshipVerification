@@ -15,7 +15,7 @@ def compute(args):
     anon = not args.include_uid
     repo = args.datarepo
     dataset = args.DATASET
-    mode = args.mode
+    nCompare = min(3,max(1,args.num_compare)) # 1<=nCompare<=3
 
     dinfo = DataInfo(repo)
     wpath = get_network_path(repo, network)+str(epoch)+'.h5'
@@ -24,7 +24,7 @@ def compute(args):
     model.load_weights(wpath)
 
     print("Creating WS-generator for "+str(dataset))
-    gen = WSGenerator(dinfo, dataset, mode=mode)
+    gen = WSGenerator(dinfo, dataset, comp=nCompare)
 
     res = []
     print("Generating similarities for "+str(dataset)+" with "+str(len(gen))+" authors.")
@@ -38,11 +38,10 @@ def compute(args):
         for x in Xs:
             sims = np.vstack([sims, model.predict(x)])
 
-        if mode == 'triple':
-            newsims = []
-            for i in range(len(ts)):
-                newsims.append(sum(sims[i:i+3])/3)
-            sims = np.array(newsims)
+        newsims = []
+        for i in range(len(ts)):
+            newsims.append(sum(sims[nCompare*i:nCompare*i+nCompare])/nCompare)
+        sims = np.array(newsims)
 
         # prediction done, fix times
         

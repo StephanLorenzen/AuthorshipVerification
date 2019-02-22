@@ -8,19 +8,11 @@ from . import util
 from sim.helpers.data import load_data
 
 class WSGenerator(keras.utils.Sequence):
-    # Mode must be:
-    # -> first  : compare all texts to first text by author
-    # -> second : compare all texts to second text by author
-    # -> triple : compare all texts to three first texts
-    def __init__(self, dinfo, filename, mode='first'):
+    def __init__(self, dinfo, filename, comp=1):
         self.datainfo = dinfo
         self.authors  = []
-        
-        if mode not in set({'first','second','triple'}):
-            print("Unknown mode, using 'first'")
-            mode = 'first'
 
-        self.mode = mode
+        self.comp = comp
 
         self.get_data(filename)
    
@@ -54,18 +46,9 @@ class WSGenerator(keras.utils.Sequence):
 
     def __data_generation(self, author):
         X = dict()
-        if self.mode == 'first' or self.mode == 'second':
-            head = author[0][2] if self.mode == 'first' else author[1][2]
-            tail = [x[2] for x in author]
-            head = [head]*len(tail)
-        elif self.mode == 'triple':
-            head = [h[2] for h in author[:3]]
-            tail = [x[2] for x in author for i in range(3)]
-            head = head * len(author)
-        else:
-            print('Unknown mode...')
-            return None
-       
+        head = [h[2] for h in author[:self.comp]] * len(author) # [t_1,t_2,...,t_comp] x n
+        tail = [x[2] for x in author for i in range(self.comp)] # [t_1 x comp, t_2 x comp, ...]
+        
         for cidx,c in enumerate(self.datainfo.channels()):
             h, t = self.prep_channel(cidx, head, tail)
             X['known_'+c+'_in'] = h
