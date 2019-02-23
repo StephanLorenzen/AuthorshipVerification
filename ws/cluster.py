@@ -31,7 +31,7 @@ def cluster(args):
     if k is None:
         kmeans.select(range(2,10), data, distance)
     else:
-        err, labels, centers, centercnt = kmeans.cluster(data, k, distance, verbose=True)
+        err, labels, centers, centercnt, intervals = kmeans.cluster(data, k, distance, verbose=True)
         cnt = [0]*k
         cl  = max([x.shape[0] for x in centers])+1
         #centercnt = [np.zeros(cl) for _ in range(k)]
@@ -47,7 +47,11 @@ def cluster(args):
             for i in range(k):
                 f.write(str(i)+':'+str(cnt[i])+'\n')
                 clust = centers[i]
+                upper,lower = intervals[i]
                 with open(path+prefix+'c'+str(i)+'.csv', 'w') as cf:
-                    cf.write('idx;sim;cnt\n')
+                    cf.write('idx;sim;cnt;upper;lower\n')
                     for j in range(clust.shape[0]):
-                        cf.write(str(j*util.DELTA)+';'+str(clust[j])+';'+str(float(centercnt[i][j])/cnt[i])+'\n')
+                        cf.write(str(j*util.DELTA)+';'+str(clust[j])+';'
+                                +str(float(centercnt[i][j])/cnt[i])+';'
+                                +str(float(upper[j]))+';'+str(float(lower[j]))
+                                +'\n')
