@@ -8,7 +8,7 @@ import textstat
 PROFILES = {
         "PAN13":{
             "lang":"en",
-            "dir":"PAN13",
+            "dir":"../data/PAN13",
             "remove_first":False,
             "remove_names":False,
             "txt_max_length": 10000,
@@ -18,7 +18,7 @@ PROFILES = {
             },
         "MaCom":{
             "lang":"da",
-            "dir":"MaCom",
+            "dir":"../data/MaCom",
             "remove_first":True,
             "remove_names":True,
             "txt_max_length": 30000,
@@ -152,14 +152,16 @@ for i,(uid,ts,text,nsen) in enumerate(texts):
         percent = int(float(100*i)/float(len(texts)))
         print(str(percent)+"%")
         percent += 1
-    
+        
     text = clean(text)
     
     polytext = Text(text, hint_language_code=profile["lang"])
     postags = polytext.pos_tags
 
     cntmap = dict()
-    for pt in postags:
+    cntmap['NOUN'] = 0
+    cntmap['VERB'] = 0
+    for _,pt in postags:
         if pt not in cntmap:
             cntmap[pt] = 0
         cntmap[pt] += 1
@@ -190,11 +192,11 @@ for i,(uid,ts,text,nsen) in enumerate(texts):
     plist = [x[1] for x in postags]
     wordmap = dict()
     for (w,p) in postags:
-        if p in ('PUNCT', 'PROPN', 'SYM', 'X'):
+        if p in ('PUNCT', 'PROPN', 'SYM', 'X', 'NUM'):
             continue
         if w not in wordmap:
             wordmap[w] = 0
-        wordmap += 1
+        wordmap[w] += 1
     
     if profile["remove_first"]:
         text = text[200:]
@@ -208,7 +210,7 @@ for i,(uid,ts,text,nsen) in enumerate(texts):
     words.append((uid, " ".join(wlist)))
     pos.append((uid, " ".join(plist)))
 
-    meta.append((nsen, cntmap['NOUN'], cntmap['VERB'], flesch, smog, coleman, ari, linesar, gunfog, wordmap))
+    meta.append((nsen, cntmap['NOUN'], cntmap['VERB'], flesch, smog, coleman, ari, linsear, gunfog, wordmap))
 print("100%\n")
     
 texts = ntexts
@@ -226,9 +228,9 @@ with open(path_pro+dfile+'_ts.csv', 'w', encoding='utf8') as fts,\
         ftext.write(uid+";"+text+"\n")
         fword.write(uid+";"+words+"\n")
         fpos.write(uid+";"+pos+"\n")
-        (nsen, nnoun, nverb, flesch, smog, coleman, ari, linesar, gunfog, wordmap) = dmeta
+        (nsen, nnoun, nverb, flesch, smog, coleman, ari, linsear, gunfog, wordmap) = dmeta
         fmeta.write(uid+';'+str(nsen)+';'+str(nnoun)+';'+str(nverb)+';'+str(flesch)+';'+str(smog)+';'
-                +str(coleman)+';'+str(ari)+';'+str(linesar)+';'+gunfog+'\n')
-        wlist = ";".join(sorted([str(w)+','+str(c) for w,c in wordmap.items()]))
+                +str(coleman)+';'+str(ari)+';'+str(linsear)+';'+str(gunfog)+'\n')
+        wlist = ";".join([str(w)+','+str(c) for w,c in sorted(list(wordmap.items()), key=lambda x: x[1])])
         fwrdmp.write(uid+';'+wlist+'\n')
     
