@@ -2,3 +2,6 @@
 path_storage = ~/.writing-style-analysis/
 path_data    = ~/.writing-style-analysis/data/
 datarepo     = PAN13
+
+num_compare  = 1
+num_remove   = 0
