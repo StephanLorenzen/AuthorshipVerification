@@ -14,7 +14,7 @@ def assign_clusters(data, centers, distfunc):
         err += ds[ci]
     return labels, err/len(data)
 
-def compute_centers(k, data, labels, distfunc):
+def compute_centers(k, data, labels):
     mdim = max([d.shape[0] for d in data])
     centers = [np.zeros(mdim) for _ in range(k)]
     counts  = [np.zeros(mdim) for _ in range(k)]
@@ -63,7 +63,7 @@ def cluster(data, k, distname, maxiter=100, verbose=False):
     distfunc = wsdist.l1
     if distname == 'l2':
         distfunc = wsdist.l2
-
+    
     data = util._interpolate(data) 
 
     centers = random.sample(data, k)
@@ -72,7 +72,7 @@ def cluster(data, k, distname, maxiter=100, verbose=False):
         if verbose:
             print("Iteration #"+str(i))
         labels, err = assign_clusters(data, centers, distfunc)
-        centers, counts = compute_centers(k, data, labels, distfunc)
+        centers, counts = compute_centers(k, data, labels)
         if verbose:
             print("=> Error = "+str(err))
         if abs(perr-err) < 0.000001:

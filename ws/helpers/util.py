@@ -20,6 +20,12 @@ def get_path(datarepo, dataset, network):
         os.makedirs(path)
     return path
 
+def get_data_path(datarepo):
+    config = get_config()
+    path = config['path_data']+datarepo+'/processed/'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
 
 # Interpolation
 

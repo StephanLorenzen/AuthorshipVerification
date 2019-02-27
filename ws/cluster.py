@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from .helpers import util, kmeans
+from .helpers import util, kmeans, quality
 
 def cluster(args):
     network  = args.NETWORK
@@ -32,14 +32,14 @@ def cluster(args):
         kmeans.select(range(2,10), data, distance)
     else:
         err, labels, centers, centercnt, intervals = kmeans.cluster(data, k, distance, verbose=True)
+    
+        measures = quality.get_qualities(repo, dataset, k, labels, nRemove)
+
         cnt = [0]*k
         cl  = max([x.shape[0] for x in centers])+1
-        #centercnt = [np.zeros(cl) for _ in range(k)]
         for l,x in zip(labels,data):
             cnt[l] += 1
-            #for j in range(x.shape[0]):
-                #centercnt[l][j] += 1
-
+        
         prefix = str(k)+'-'+str(distance)+"-"
         with open(path+prefix+'stats.txt', 'w') as f:
             f.write('Error:\n'+str(err)+'\n\n')
@@ -49,9 +49,10 @@ def cluster(args):
                 clust = centers[i]
                 upper,lower = intervals[i]
                 with open(path+prefix+'c'+str(i)+'.csv', 'w') as cf:
-                    cf.write('idx;sim;cnt;upper;lower\n')
+                    cf.write('idx;sim;cnt;upper;lower;'+';'.join(list(measures.keys()))+'\n')
                     for j in range(clust.shape[0]):
                         cf.write(str(j*util.DELTA)+';'+str(clust[j])+';'
                                 +str(float(centercnt[i][j])/cnt[i])+';'
-                                +str(float(upper[j]))+';'+str(float(lower[j]))
+                                +str(float(upper[j]))+';'+str(float(lower[j]))+';'
+                                +';'.join([str(x[i][j]) for _, x in measures.items()])
                                 +'\n')
