@@ -12,7 +12,9 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         for l in fmeta:
             meta.append(l.strip().split(';'))
         for i,l in enumerate(fwc):
-            meta[i].append(l.strip().split(';')[1])
+            l = l.strip().split(';')
+            meta[i].append(l[1])
+            meta[i].append(l[2])
 
     authors = dict()
     for m in meta:
@@ -24,13 +26,14 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         ari     = float(m[7])
         linsear = float(m[8])/10
         gf      = float(m[9])
-        wrdcnt  = (float(m[10])/nsen)/7
+        wrdcnt  = (float(m[10])/float(m[11]))
+        totwrd  = float(m[11])
 
         mesnoun = nnoun / nsen
         mesverb = nverb / nsen
         if uid not in authors:
             authors[uid] = []
-        authors[uid].append([mesnoun/3, mesverb/3, flesch, smog, coleman, ari, linsear, gf, wrdcnt, nsen/100])
+        authors[uid].append([mesnoun/3, mesverb/3, flesch, smog, coleman, ari, linsear, gf, wrdcnt, totwrd/1000, nsen/100])
 
     tss = []
     with open(path+'cluster-data.csv') as f:
@@ -41,6 +44,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
 
     measures = dict()
     measures['sentences']=[]
+    measures['words']    =[]
     measures['nouns']   = []
     measures['verbs']   = []
     measures['fleschs'] = []
@@ -57,7 +61,8 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         ms = np.array(ms)
         ms = np.transpose(ms)
         
-        measures['sentences'].append(list(zip(ts,ms[9])))
+        measures['sentences'].append(list(zip(ts,ms[10])))
+        measures['words'].append(list(zip(ts,ms[9])))
         measures['nouns'].append(list(zip(ts,ms[0])))
         measures['verbs'].append(list(zip(ts,ms[1])))
         measures['fleschs'].append(list(zip(ts,ms[2])))
