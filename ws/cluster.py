@@ -29,7 +29,11 @@ def cluster(args):
                 instance[i][0]-=t0
             data.append(np.array(instance[nRemove:]))
     if k is None:
-        kmeans.select(range(2,10), data, distance)
+        errs = kmeans.select(range(2,10), data, distance)
+        with open(path+'select.csv', 'w') as f:
+            f.write('k;err\n')
+            for kk, err in errs:
+                f.write(str(kk)+';'+str(err)+'\n')
     else:
         err, labels, centers, centercnt, intervals = kmeans.cluster(data, k, distance, verbose=True)
     
