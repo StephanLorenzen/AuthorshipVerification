@@ -58,7 +58,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         ms = ms[nRemove:]
         ts = ts[nRemove:]
         t0 = ts[0]
-        ts = [x-t0 for x in ts[nRemove:]]
+        ts = [x-t0 for x in ts]
         ms = np.array(ms)
         ms = np.transpose(ms)
         
