@@ -20,11 +20,11 @@ def get_qualities(repo, dataset, k, labels, nRemove):
     for m in meta:
         uid = m[0]
         nsen, nnoun, nverb = float(m[1]), float(m[2]), float(m[3])
-        flesch  = float(m[4])/60
+        flesch  = float(m[4])
         smog    = float(m[5])
         coleman = float(m[6])
         ari     = float(m[7])
-        linsear = float(m[8])/10
+        linsear = float(m[8])
         gf      = float(m[9])
         wrdcnt  = (float(m[10])/float(m[11]))
         totwrd  = float(m[11])
@@ -33,7 +33,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         mesverb = nverb / nsen
         if uid not in authors:
             authors[uid] = []
-        authors[uid].append([mesnoun/3, mesverb/3, flesch, smog, coleman, ari, linsear, gf, wrdcnt, totwrd/1000, nsen/100])
+        authors[uid].append([mesnoun, mesverb, flesch, smog, coleman, ari, linsear, gf, wrdcnt, totwrd, nsen])
 
     tss = []
     with open(path+'cluster-data.csv') as f:
