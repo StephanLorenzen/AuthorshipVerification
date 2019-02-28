@@ -2,6 +2,7 @@ import argparse
 from .helpers import util
 from .train import train as run_train
 from .test import test as run_test
+from .evaluate import evaluate as run_eval
 
 if __name__ == "__main__":
     config = util.get_config()
@@ -33,6 +34,18 @@ if __name__ == "__main__":
             default=config['datarepo'], help='Data repository to use.')
     parser_test.add_argument('TESTSET', type=str, help='Test set.')
 
+    ### EVAL
+    parser_eval  = subparser.add_parser('eval')
+    parser_eval.add_argument('NETWORK', type=str, help='Network to use.')
+    parser_eval.add_argument('-e', '--epoch', metavar='EPOCH', type=str,
+            default='final', help='Epoch network to use.')
+    parser_eval.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
+            default=config['datarepo'], help='Data repository to use.')
+    parser_eval.add_argument('EVALSET', type=str, help='Test set.')
+    parser_eval.add_argument('-n', '--negative', action='store_const', const=True,
+            default=False, help='Evaluate average similarity only on negative samples.')
+    parser_eval.add_argument('-p', '--positive', action='store_const', const=True,
+            default=False, help='Evaluate average similarity only on positive samples.')
     args = parser.parse_args()
 
     parser_preprocess = subparser.add_parser('preprocess')
@@ -41,6 +54,8 @@ if __name__ == "__main__":
         run_train(args)
     elif args.command == 'test':
         run_test(args)
+    elif args.command == 'eval':
+        run_eval(args)
     else:
         pass
         #run_preprocess(args)

@@ -85,13 +85,15 @@ class DataInfo:
         return tuple(res)
 
 class SiameseGenerator(keras.utils.Sequence):
-    def __init__(self, datainfo, filename, shuffle=True, subsample=None):
+    def __init__(self, datainfo, filename, shuffle=True, subsample=None, inclNeg=True, inclPos=True):
         self.datainfo = datainfo
         self.shuffle  = shuffle
         self.subsample = subsample
         self.authors  = []
         self.data     = []
         self.problems = []
+        self.inclNeg = inclNeg
+        self.inclPos = inclPos
         
         self.get_data(filename)
         self.construct_problems() 
@@ -117,13 +119,15 @@ class SiameseGenerator(keras.utils.Sequence):
             for i,pi in enumerate(data):
                 for j in range(i+1,len(data)):
                     pj = data[j]
-                    self.problems.append(((pi,pj), 1))
+                    if self.inclPos:
+                        self.problems.append(((pi,pj), 1))
                 
                     gw = aidx
                     while gw == aidx:
                         gw = random.randint(0, len(self.authors)-1)
                     pbad = random.choice(self.authors[gw])
-                    self.problems.append(((pi, pbad), 0))
+                    if self.inclNeg:
+                        self.problems.append(((pi, pbad), 0))
 
         random.shuffle(self.problems)
 
