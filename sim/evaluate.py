@@ -18,11 +18,6 @@ def evaluate(args):
     epoch = args.epoch
     repo = args.datarepo
     evalset = args.EVALSET
-    inclneg, inclpos = True, True
-    if args.negative:
-        inclpos = False
-    elif args.positive:
-        inclneg = False
 
     dinfo = avdata.DataInfo(repo)
     
@@ -35,14 +30,27 @@ def evaluate(args):
     
     model.load_weights(fname)
 
-    print("Creating SIM-generator for "+str(evalset))
-    gen = avdata.SiameseGenerator(dinfo, evalset, inclNeg=inclneg, inclPos=inclpos)
-    print("Evaluating...")
-    if args.negative:
-        print(" Using only negative samples...")
-    elif args.positive:
-        print(" Using only positive samples...")
-    sims = model.predict_generator(gen, verbose=1)
-    mean = np.mean(sims[:,1])
+    print("Evaluating negative only...")
+    gen = avdata.SiameseGenerator(dinfo, evalset, inclPos=False)
+    negsims = model.predict_generator(gen, verbose=1)
+    negmean = np.mean(negsims[:,1])
+    negvar  = np.var(negsims[:,1])
+    print(" Mean = "+str(negmean))
+    print(" Var  = "+str(negvar))
+
+    print("Evaluating positive only...")
+    gen = avdata.SiameseGenerator(dinfo, evalset, inclNeg=False)
+    possims = model.predict_generator(gen, verbose=1)
+    posmean = np.mean(possims[:,1])
+    posvar  = np.var(possims[:,1])
+    print(" Mean = "+str(posmean))
+    print(" Var  = "+str(posvar))
     
+    print("Evaluating all...")
+    sims = np.vstack([negsims,possims])
+    mean = np.mean(sims[:,1])
+    var  = np.var(sims[:,1])
+    print(" Mean = "+str(mean))
+    print(" Var  = "+str(var))
+
     print("=> Mean similarity: "+str(mean))

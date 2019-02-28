@@ -42,10 +42,6 @@ if __name__ == "__main__":
     parser_eval.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
             default=config['datarepo'], help='Data repository to use.')
     parser_eval.add_argument('EVALSET', type=str, help='Test set.')
-    parser_eval.add_argument('-n', '--negative', action='store_const', const=True,
-            default=False, help='Evaluate average similarity only on negative samples.')
-    parser_eval.add_argument('-p', '--positive', action='store_const', const=True,
-            default=False, help='Evaluate average similarity only on positive samples.')
     args = parser.parse_args()
 
     parser_preprocess = subparser.add_parser('preprocess')
