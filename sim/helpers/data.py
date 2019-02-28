@@ -122,12 +122,14 @@ class SiameseGenerator(keras.utils.Sequence):
                     if self.inclPos:
                         self.problems.append(((pi,pj), 1))
                 
-                    gw = aidx
-                    while gw == aidx:
-                        gw = random.randint(0, len(self.authors)-1)
-                    pbad = random.choice(self.authors[gw])
                     if self.inclNeg:
-                        self.problems.append(((pi, pbad), 0))
+                        a1 = random.randint(0, len(self.authors)-1)
+                        a2 = a1
+                        while a2 == a1:
+                            a2 = random.randint(0,len(self.authors)-1)
+                        p1 = random.choice(self.authors[a1])
+                        p2 = random.choice(self.authors[a2])
+                        self.problems.append(((p1, p2), 0))
 
         random.shuffle(self.problems)
 
