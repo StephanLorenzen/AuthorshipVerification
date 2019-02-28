@@ -42,7 +42,7 @@ def evaluate(args):
         print(" Using only negative samples...")
     elif args.positive:
         print(" Using only positive samples...")
-    sims = model.predict_generator(gen)
-    mean = np.mean(sims)
+    sims = model.predict_generator(gen, verbose=1)
+    mean = np.mean(sims[:,1])
     
     print("=> Mean similarity: "+str(mean))
