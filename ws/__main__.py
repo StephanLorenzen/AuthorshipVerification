@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser_cluster.add_argument('-d', '--datarepo', metavar='DATAREPO', type=str,
             default=config['datarepo'], help='Data repository to use.')
     parser_cluster.add_argument('-dist', '--distance', metavar='DISTANCE', type=str,
-            default='l1', choices=['l1','l2'], help='Distance function to use (default = l1).')
+            default='l2', choices=['l1','l2'], help='Distance function to use (default = l2).')
     parser_cluster.add_argument('-k', '--num_clusters', metavar='K', type=int,
             default=None, help='Number of clusters, runs select if none given.')
     parser_cluster.add_argument('-r', '--num_remove', metavar='NUM_R', type=int,
