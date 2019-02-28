@@ -56,6 +56,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
     measures['wrdcnts'] = []
     for (uid, ms), ts in zip(authors.items(), tss):
         ms = ms[nRemove:]
+        ts = ts[nRemove:]
         t0 = ts[0]
         ts = [x-t0 for x in ts[nRemove:]]
         ms = np.array(ms)
