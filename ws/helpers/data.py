@@ -8,11 +8,9 @@ from . import util
 from sim.helpers.data import load_data
 
 class WSGenerator(keras.utils.Sequence):
-    def __init__(self, dinfo, filename, comp=1):
+    def __init__(self, dinfo, filename):
         self.datainfo = dinfo
         self.authors  = []
-
-        self.comp = comp
 
         self.get_data(filename)
    
@@ -46,13 +44,17 @@ class WSGenerator(keras.utils.Sequence):
 
     def __data_generation(self, author):
         X = dict()
-        head = [h[2] for h in author[:self.comp]] * len(author) # [t_1,t_2,...,t_comp] x n
-        tail = [x[2] for x in author for i in range(self.comp)] # [t_1 x comp, t_2 x comp, ...]
-        
+        txt1s = []
+        txt2s = []
+        for i in range(len(author)):
+            for j in range(i+1,len(author)):
+                txt1s.append(author[i][2])
+                txt2s.append(author[j][2])
+
         for cidx,c in enumerate(self.datainfo.channels()):
-            h, t = self.prep_channel(cidx, head, tail)
-            X['known_'+c+'_in'] = h
-            X['unknown_'+c+'_in'] = t
+            t1, t2 = self.prep_channel(cidx, txt1s, txt2s)
+            X['known_'+c+'_in'] = t1
+            X['unknown_'+c+'_in'] = t2
         return X
 
     def prep_channel(self, cidx, head, tail):

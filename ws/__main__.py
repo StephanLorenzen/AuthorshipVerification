@@ -20,8 +20,6 @@ if __name__ == "__main__":
             default=config['datarepo'], help='Data repository to use.')
     parser_comp.add_argument('-u', '--include_uid', action='store_const', const=True,
             default=False, help='If set, author id is included in output file')
-    parser_comp.add_argument('-c', '--num_compare', metavar='NUM_C', type=int,
-            default=config['num_compare'], help='Number of texts to use for initial ws assessment.')
     parser_comp.add_argument('DATASET', type=str, help='Data set.')
 
     ### CLUSTER

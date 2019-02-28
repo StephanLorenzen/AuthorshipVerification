@@ -15,7 +15,6 @@ def compute(args):
     anon = not args.include_uid
     repo = args.datarepo
     dataset = args.DATASET
-    nCompare = min(3,max(1,args.num_compare)) # 1<=nCompare<=3
 
     dinfo = DataInfo(repo)
     wpath = get_network_path(repo, network)+str(epoch)+'.h5'
@@ -24,7 +23,7 @@ def compute(args):
     model.load_weights(wpath)
 
     print("Creating WS-generator for "+str(dataset))
-    gen = WSGenerator(dinfo, dataset, comp=nCompare)
+    gen = WSGenerator(dinfo, dataset)
 
     res = []
     print("Generating similarities for "+str(dataset)+" with "+str(len(gen))+" authors.")
@@ -37,11 +36,6 @@ def compute(args):
         sims = np.empty((0,2))
         for x in Xs:
             sims = np.vstack([sims, model.predict(x)])
-
-        newsims = []
-        for i in range(len(ts)):
-            newsims.append(sum(sims[nCompare*i:nCompare*i+nCompare])/nCompare)
-        sims = np.array(newsims)
 
         # prediction done, fix times
         
@@ -58,11 +52,12 @@ def compute(args):
 
         res.append((uid, ts, ls, sims))
 
-    outfile = util.get_path(repo, dataset, network)+'cluster-data.csv'
-    with open(outfile, 'w') as out:
-        for (uid,ts,_,sims) in res:
+    simOut  = util.get_path(repo, dataset, network)+'data-sim.csv'
+    metaOut = util.get_path(repo, dataset, network)+'data-meta.csv'
+    with open(simOut, 'w') as fsim, open(metaOut, 'w') as fmeta:
+        for (uid,ts,ls,sims) in res:
             if anon:
-                out.write('author;'+';'.join([str(t)+','+str(sim[1]) for t,sim in zip(ts,sims)])+'\n')
-            else:
-                out.write(str(uid)+';'+';'.join([str(t)+','+str(sim[1]) for t,sim in zip(ts,sims)])+'\n')
+                uid = 'author'
+            fsim.write(str(uid)+';'+';'.join([str(sim[1]) for sim in sims])+'\n')
+            fmeta.write(str(uid)+';'+';'.join([str(l)+','+str(t) for l,t in zip(ls,ts)])+'\n')
 
