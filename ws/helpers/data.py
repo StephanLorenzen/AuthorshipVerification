@@ -1,9 +1,11 @@
 import random
 import numpy as np
 import keras
+import math
 from keras.preprocessing import sequence
 
 from . import util
+from .util import DELTA
 
 from sim.helpers.data import load_data
 
@@ -22,8 +24,13 @@ class WSGenerator(keras.utils.Sequence):
         for (uid, data) in auths:
             texts = []
             data.sort(key=lambda x: x[0])
+            t0 = data[0][0]
+            tp = -1
             for d in data:
-                ts = d[0]
+                ts = (d[0]-t0) / (60*60*24*30)
+                if ts-tp < DELTA:
+                    ts = tp+DELTA
+                tp = ts
                 ls = len(d[1])
                 proc = self.datainfo.encode(d[1:])
                 texts.append((ts, ls, proc))
@@ -64,6 +71,72 @@ class WSGenerator(keras.utils.Sequence):
         t = sequence.pad_sequences(t, value=0, padding='post')
         
         return np.array(h), np.array(t)
+
+class WSRandGenerator(keras.utils.Sequence):
+    def __init__(self, dinfo, filename, numSamples):
+        self.datainfo = dinfo
+        self.authors  = []
+        self.numSamples = numSamples
+
+        self.get_data(filename)
+
+    def get_data(self, filename):
+        self.authors = []
+        auths = list(load_data(filename, self.datainfo.dataset,
+            self.datainfo.channels(), incl_ts=True).items())
+        
+        for (uid, data) in auths:
+            texts = []
+            data.sort(key=lambda x: x[0])
+            t0 = data[0][0]
+            tp = -1
+            for d in data:
+                ts = (d[0]-t0) / (60*60*24*30)
+                if ts-tp < DELTA:
+                    ts = tp+DELTA
+                tp = ts
+                ls = len(d[1])
+                proc = self.datainfo.encode(d[1:])
+                texts.append((ts, ls, proc))
+            self.authors.append((uid, texts))
+
+    def __len__(self):
+        return math.ceil(self.numSamples/self.datainfo.batch_size())
+
+    def __getitem__(self, index):
+        ts, X = self.__data_generation(self.datainfo.batch_size())
+        return (ts, X)
+
+    def __data_generation(self, size):
+        X = dict()
+        ts    = []
+        txt1s = []
+        txt2s = []
+        for _ in range(size):
+            a1 = random.randint(0,len(self.authors)-1)
+            a2 = a1
+            while a2 == a1:
+                a2 = random.randint(0,len(self.authors)-1)
+            (ts1,_,txt1) = random.choice(self.authors[a1][1])
+            (ts2,_,txt2) = random.choice(self.authors[a2][1])
+            ts.append((ts1,ts2))
+            txt1s.append(txt1)
+            txt2s.append(txt2)
+
+        for cidx,c in enumerate(self.datainfo.channels()):
+            t1, t2 = self.prep_channel(cidx, txt1s, txt2s)
+            X['known_'+c+'_in'] = t1
+            X['unknown_'+c+'_in'] = t2
+        return ts, X
+
+    def prep_channel(self, cidx, head, tail):
+        h, t = [h[cidx] for h in head], [x[cidx] for x in tail]
+        
+        h = sequence.pad_sequences(h, value=0, padding='post')
+        t = sequence.pad_sequences(t, value=0, padding='post')
+        
+        return np.array(h), np.array(t)
+
 
 def load_similarities(repo, network, trainset):
     simfile = util.get_sim_path(repo)+network+'-'+trainset+'.csv'
