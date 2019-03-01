@@ -167,3 +167,49 @@ def cut(X, batch_size):
         i += 1
         l -= batch_size
     return res
+
+def load_and_prep(path, nCompare=1, nRemove=0):
+    profiles = []
+    with open(path+'data-meta.csv') as f:
+        for l in f:
+            profile = []
+            l = l.split(';')
+            uid = l[0]
+            l = l[1:]
+            for d in l:
+                t = float(d.split(',')[1])
+                profile.append(t)
+            profiles.append(profile)
+    
+    data = []
+    with open(path+'data-sim.csv') as f:
+        for i,l in enumerate(f):
+            profile = profiles[i]
+            n = len(profile)
+            l = l.split(';')[1:]
+            cl = 0
+            mp = dict()
+            for i1 in range(0,n):
+                mp[(i1,i1)] = 1.0
+                for i2 in range(i1+1,n):
+                    mp[(i1,i2)] = float(l[cl])
+                    mp[(i2,i1)] = float(l[cl])
+                    cl += 1
+            for i1 in range(0,n):
+                # i1 current data point
+                ts = profile[i1]
+                sim = 0.0
+                for i2 in range(0,nCompare):
+                    sim += mp[(i1,i2)]
+                sim /= nCompare
+                profile[i1] = (ts,sim) 
+            data.append(profile)
+
+    # Remove if needed
+    for i in range(len(data)):
+        profile = data[i]
+        t0 = profile[nRemove][0]
+        profile = [(ts-t0, sim) for ts, sim in profile]
+        data[i] = np.array(profile[nRemove:])
+    return data
+

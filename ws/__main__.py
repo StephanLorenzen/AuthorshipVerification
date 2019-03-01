@@ -36,6 +36,9 @@ if __name__ == "__main__":
     parser_cluster.add_argument('-r', '--num_remove', metavar='NUM_R', type=int,
             default=config['num_remove'],
             help='Length of prefix to remove for each data point (typically = to mode).')
+    parser_cluster.add_argument('-c', '--num_compare', metavar='NUM_C', type=int,
+            default=config['num_compare'],
+            help='Number of texts used for initial writing style approximation.')
     parser_cluster.add_argument('DATASET', type=str, help='Data set.')
     
     ### PREDICT

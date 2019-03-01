@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from .helpers import util, kmeans, quality
+from .helpers import data as cdata
 
 def cluster(args):
     network  = args.NETWORK
@@ -8,26 +9,12 @@ def cluster(args):
     dataset  = args.DATASET
     distance = args.distance
     k        = args.num_clusters
-    nRemove  = max(args.num_remove, 0) # 0 <= nRemove  <= nCompare
+    nCompare = max(1, args.num_compare)
+    nRemove  = max(args.num_remove, 0)
 
     # Load data
     path = util.get_path(repo, dataset, network)
-    data = []
-    with open(path+'cluster-data.csv') as f:
-        for l in f:
-            l = l.strip().split(';')
-            instance = []
-            for elem in l[1:]:
-                elem = elem.strip().split(',')
-                instance.append([float(elem[0]),float(elem[1])])
-            # Remove first nRemove elements 
-            if nRemove >= len(instance):
-                print("Warning: trying to remove too many elements. Skipping data point...")
-                continue
-            t0 = instance[nRemove][0]
-            for i in range(len(instance)):
-                instance[i][0]-=t0
-            data.append(np.array(instance[nRemove:]))
+    data = cdata.load_and_prep(path, nCompare, nRemove)
     if k is None:
         errs = kmeans.select(range(2,10), data, distance)
         with open(path+'select.csv', 'w') as f:
