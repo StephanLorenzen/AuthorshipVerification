@@ -23,7 +23,7 @@ def compute(args):
     model.load_weights(wpath)
 
     if randc:
-        numSamples = 100000
+        numSamples = 2000000
         print("Creating WSRand-generator for "+str(dataset))
         gen = WSRandGenerator(dinfo, dataset, numSamples)
 
@@ -35,7 +35,8 @@ def compute(args):
             if i >= per*len(gen):
                 print(str(round(per*100))+"%")
                 per += max(0.01, 1.0/len(gen))
-
+            if per > 1.0:
+                break
             sims = np.vstack([sims, model.predict(X)])
             tss += ts
         

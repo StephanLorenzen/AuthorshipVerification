@@ -181,8 +181,8 @@ class SiameseGenerator(keras.utils.Sequence):
        
         kls  = [len(x) for x in known]
         uls  = [len(x) for x in unknown]
-        kmin = min(max(1000, min(kls)), max(kls))
-        umin = min(max(1000, min(uls)), max(uls))
+        kmin = min(max(10000, min(kls)), max(kls))
+        umin = min(max(10000, min(uls)), max(uls))
         known = sequence.pad_sequences(known, value=0, maxlen=kmin, truncating='post', padding='post')
         unknown = sequence.pad_sequences(unknown, value=0, maxlen=umin, truncating='post', padding='post')
         
