@@ -16,11 +16,17 @@ def cluster(args):
     path = util.get_path(repo, dataset, network)
     data = cdata.load_and_prep(path, nCompare, nRemove)
     if k is None:
-        errs = kmeans.select(range(2,10), data, distance)
+        errs = kmeans.select(range(1,10), data, distance)
+        perr = 1.0
+        pdel = 1.0
         with open(path+'select.csv', 'w') as f:
-            f.write('k;err\n')
+            f.write('k;err;delta;imp\n')
             for kk, err in errs:
-                f.write(str(kk)+';'+str(err)+'\n')
+                delta = perr-err
+                imp = delta/pdel
+                perr = err
+                pdel = delta
+                f.write(str(kk)+';'+str(err)+';'+str(delta)+';'+str(imp)+'\n')
     else:
         err, labels, centers, centercnt, intervals = kmeans.cluster(data, k, distance, verbose=True)
     
