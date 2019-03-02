@@ -18,6 +18,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
 
     authors = dict()
     for m in meta:
+        assert(len(m) == 12)
         uid = m[0]
         nsen, nnoun, nverb = float(m[1]), float(m[2]), float(m[3])
         flesch  = float(m[4])
@@ -35,12 +36,15 @@ def get_qualities(repo, dataset, k, labels, nRemove):
             authors[uid] = []
         authors[uid].append([mesnoun, mesverb, flesch, smog, coleman, ari, linsear, gf, wrdcnt, totwrd, nsen])
 
-    tss = []
-    with open(path+'cluster-data.csv') as f:
+    metas = []
+    with open(path+'data-meta.csv') as f:
         for l in f:
             l = l.strip().split(';')[1:]
-            tss.append([float(x.split(',')[0]) for x in l])
-
+            xs = []
+            for x in l:
+                x = x.strip().split(',')
+                xs.append((float(x[1]),float(x[0])))
+            metas.append(xs)
 
     measures = dict()
     measures['sentences']=[]
@@ -54,13 +58,16 @@ def get_qualities(repo, dataset, k, labels, nRemove):
     measures['linsears']= []
     measures['gfs']     = []
     measures['wrdcnts'] = []
-    for (uid, ms), ts in zip(authors.items(), tss):
-        ms = ms[nRemove:]
-        ts = ts[nRemove:]
-        t0 = ts[0]
-        ts = [x-t0 for x in ts]
+    measures['mwl']     = []
+    for (uid, ms), meta in zip(authors.items(), metas):
         ms = np.array(ms)
         ms = np.transpose(ms)
+        ms = ms[:,nRemove:]
+        meta = meta[nRemove:]
+        t0 = meta[0][0]
+        ts = [x[0]-t0 for x in meta]
+        assert(ms.shape[1]==len(meta))
+        mwls = [x[1]/w for w,x in zip(ms[9],meta)]
         
         measures['sentences'].append(list(zip(ts,ms[10])))
         measures['words'].append(list(zip(ts,ms[9])))
@@ -73,6 +80,7 @@ def get_qualities(repo, dataset, k, labels, nRemove):
         measures['linsears'].append(list(zip(ts,ms[6])))
         measures['gfs'].append(list(zip(ts,ms[7])))
         measures['wrdcnts'].append(list(zip(ts,ms[8])))
+        measures['mwl'].append(list(zip(ts, mwls)))
 
     for key in list(measures.keys()):
         measures[key] = util._interpolate(measures[key])
