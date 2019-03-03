@@ -179,12 +179,12 @@ def load_and_prep(path, nCompare=1, nRemove=0):
             for d in l:
                 t = float(d.split(',')[1])
                 profile.append(t)
-            profiles.append(profile)
+            profiles.append((uid,profile))
     
     data = []
     with open(path+'data-sim.csv') as f:
         for i,l in enumerate(f):
-            profile = profiles[i]
+            uid,profile = profiles[i]
             n = len(profile)
             l = l.split(';')[1:]
             cl = 0
@@ -203,13 +203,15 @@ def load_and_prep(path, nCompare=1, nRemove=0):
                     sim += mp[(i1,i2)]
                 sim /= nCompare
                 profile[i1] = (ts,sim) 
-            data.append(profile)
+            data.append((uid,profile))
 
     # Remove if needed
+    uids = []
     for i in range(len(data)):
-        profile = data[i]
+        uid, profile = data[i]
         t0 = profile[nRemove][0]
         profile = [(ts-t0, sim) for ts, sim in profile]
         data[i] = np.array(profile[nRemove:])
-    return data
+        uids.append(uid)
+    return uids,data
 

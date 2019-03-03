@@ -1,50 +1,72 @@
 # Compute average quality graph for group of profiles
 import numpy as np
 from . import kmeans, util
+from .util import DELTA
+import datetime
 
-def get_qualities(repo, dataset, k, labels, nRemove):
+def get_qualities(repo, dataset, k, labels, nRemove, uids):
     meta = []
     rawpath = util.get_data_path(repo)
     path = util.get_path(repo, dataset, 'charCNN')
 
-    with open(rawpath+dataset+'_wrdcnt.csv') as fwc, open(rawpath+dataset+'_meta.csv') as fmeta:
+    with open(rawpath+dataset+'_ts.csv') as ft, open(rawpath+dataset+'_wrdcnt.csv') as fwc, open(rawpath+dataset+'_meta.csv') as fmeta:
+        for l in ft:
+            l = l.strip().split(';')
+            uid = l[0]
+            ts  = int(datetime.datetime.strptime(l[1], '%d-%m-%Y').timestamp())
+            meta.append([uid, ts])
         fmeta.readline() # remove header
-        for l in fmeta:
-            meta.append(l.strip().split(';'))
+        for i,l in enumerate(fmeta):
+            l = l.strip().split(';')
+            assert(meta[i][0] == l[0])
+            meta[i] += [float(x) for x in l[1:]]
         for i,l in enumerate(fwc):
             l = l.strip().split(';')
-            meta[i].append(l[1])
-            meta[i].append(l[2])
+            assert(meta[i][0] == l[0])
+            meta[i] += [float(l[1]), float(l[2]), float(l[3])]
 
     authors = dict()
     for m in meta:
-        assert(len(m) == 12)
+        assert(len(m) == 14)
         uid = m[0]
-        nsen, nnoun, nverb = float(m[1]), float(m[2]), float(m[3])
-        flesch  = float(m[4])
-        smog    = float(m[5])
-        coleman = float(m[6])
-        ari     = float(m[7])
-        linsear = float(m[8])
-        gf      = float(m[9])
-        wrdcnt  = (float(m[10])/float(m[11]))
-        totwrd  = float(m[11])
+        ts  = m[1]
+        nsen, nnoun, nverb = float(m[2]), float(m[3]), float(m[4])
+        flesch  = float(m[5])
+        smog    = float(m[6])
+        coleman = float(m[7])
+        ari     = float(m[8])
+        linsear = float(m[9])
+        gf      = float(m[10])
+        wrdcnt  = (float(m[11])/float(m[12]))
+        totwrd  = float(m[12])
+        mwrdl   = float(m[13])/totwrd
 
         mesnoun = nnoun / nsen
         mesverb = nverb / nsen
         if uid not in authors:
             authors[uid] = []
-        authors[uid].append([mesnoun, mesverb, flesch, smog, coleman, ari, linsear, gf, wrdcnt, totwrd, nsen])
+        authors[uid].append([ts, mesnoun, mesverb, flesch, smog, coleman, ari, linsear, gf, wrdcnt, mwrdl, totwrd, nsen])
 
-    metas = []
-    with open(path+'data-meta.csv') as f:
-        for l in f:
-            l = l.strip().split(';')[1:]
-            xs = []
-            for x in l:
-                x = x.strip().split(',')
-                xs.append((float(x[1]),float(x[0])))
-            metas.append(xs)
+    for uid, ls in authors.items():
+        ls.sort(key=lambda x: x[0])
+        t0 = ls[0][0]
+        tp = -1
+        for x in ls:
+            x[0] -= t0
+            x[0] /= (60*60*24*30)
+            if x[0]-tp < DELTA:
+                x[0] = tp+DELTA
+            tp = x[0]
+
+    #metas = []
+    #with open(path+'data-meta.csv') as f:
+    #    for l in f:
+    #        l = l.strip().split(';')[1:]
+    #        xs = []
+    #        for x in l:
+    #            x = x.strip().split(',')
+    #            xs.append((float(x[1]),float(x[0])))
+    #        metas.append(xs)
 
     measures = dict()
     measures['sentences']=[]
@@ -59,28 +81,29 @@ def get_qualities(repo, dataset, k, labels, nRemove):
     measures['gfs']     = []
     measures['wrdcnts'] = []
     measures['mwl']     = []
-    for (uid, ms), meta in zip(authors.items(), metas):
+    for uid in uids:
+        assert(uid in authors)
+        ms = authors[uid]
         ms = np.array(ms)
         ms = np.transpose(ms)
+        t0 = ms[0,nRemove]
         ms = ms[:,nRemove:]
-        meta = meta[nRemove:]
-        t0 = meta[0][0]
-        ts = [x[0]-t0 for x in meta]
-        assert(ms.shape[1]==len(meta))
-        mwls = [x[1]/w for w,x in zip(ms[9],meta)]
+        [ts, mesnoun, mesverb, flesch, smog, coleman, ari, linsear, gf, wrdcnt, mwrdl, totwrd, nsen] = ms
+        ts = [x-t0 for x in ts]
+        assert(len(ts)==len(mwrdl))
         
-        measures['sentences'].append(list(zip(ts,ms[10])))
-        measures['words'].append(list(zip(ts,ms[9])))
-        measures['nouns'].append(list(zip(ts,ms[0])))
-        measures['verbs'].append(list(zip(ts,ms[1])))
-        measures['fleschs'].append(list(zip(ts,ms[2])))
-        measures['smogs'].append(list(zip(ts,ms[3])))
-        measures['colemans'].append(list(zip(ts,ms[4])))
-        measures['aris'].append(list(zip(ts,ms[5])))
-        measures['linsears'].append(list(zip(ts,ms[6])))
-        measures['gfs'].append(list(zip(ts,ms[7])))
-        measures['wrdcnts'].append(list(zip(ts,ms[8])))
-        measures['mwl'].append(list(zip(ts, mwls)))
+        measures['sentences'].append(list(zip(ts,nsen)))
+        measures['words'].append(list(zip(ts,totwrd)))
+        measures['nouns'].append(list(zip(ts,mesnoun)))
+        measures['verbs'].append(list(zip(ts,mesverb)))
+        measures['fleschs'].append(list(zip(ts,flesch)))
+        measures['smogs'].append(list(zip(ts,smog)))
+        measures['colemans'].append(list(zip(ts,coleman)))
+        measures['aris'].append(list(zip(ts,ari)))
+        measures['linsears'].append(list(zip(ts,linsear)))
+        measures['gfs'].append(list(zip(ts,gf)))
+        measures['wrdcnts'].append(list(zip(ts,wrdcnt)))
+        measures['mwl'].append(list(zip(ts, mwrdl)))
 
     for key in list(measures.keys()):
         measures[key] = util._interpolate(measures[key])

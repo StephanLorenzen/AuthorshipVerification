@@ -14,7 +14,7 @@ def cluster(args):
 
     # Load data
     path = util.get_path(repo, dataset, network)
-    data = cdata.load_and_prep(path, nCompare, nRemove)
+    uids, data = cdata.load_and_prep(path, nCompare, nRemove)
     if k is None:
         errs = kmeans.select(range(1,10), data, distance)
         perr = 1.0
@@ -29,8 +29,7 @@ def cluster(args):
                 f.write(str(kk)+';'+str(err)+';'+str(delta)+';'+str(imp)+'\n')
     else:
         err, labels, centers, centercnt, intervals = kmeans.cluster(data, k, distance, verbose=True)
-    
-        measures = quality.get_qualities(repo, dataset, k, labels, nRemove)
+        measures = quality.get_qualities(repo, dataset, k, labels, nRemove, uids)
 
         cnt = [0]*k
         cl  = max([x.shape[0] for x in centers])+1
