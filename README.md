@@ -9,6 +9,9 @@ The application is build around the `sim` module, which is based on deep learnin
 
 In order to use the `av` and `ws` modules, the `sim`-network must first be trained, see below.
 
+## Requirements
+Linux, python version, tensorflow, ... TODO
+
 ## Input data format
 The modules require raw data to be stored in .csv format, using semi-colon for separators. The file must contain three columns, and no header. Each line (corresponding to one text) must have the following format:
 
@@ -41,20 +44,21 @@ Furthermore, each configuration file must contain a `[Default]` section, providi
 
 Note, that the same configuration file can be used for all modules. The file `config.ini.template` provides an example.
 
+TODO data info file under sim/prep
+
 ## The sim module
 The `sim` module implements neural networks for computing text similarity. Training/testing method and networks are described in [1].
 
 ### Configuration
 The configuration file must specify the following parameters in the `[Default]` section:
 
-* `dataset`: which dataset to use.
+* `NETWORK`: Network to use.
+* `DATASET`: Dataset to use.
 
-
-### Data preprocessing
-
+TODO
 
 ### Usage
-
+The `sim` module supplies four sub-procedures, each sub-procedure requiring additional arguments:
 ```
 usage: sim [-h] {train,test,eval} ...
 
@@ -65,6 +69,51 @@ positional arguments:
 
 optional arguments:
   -h, --help         show this help message and exit
+```
+
+#### train
+The `train` procedure trains the specified network on the given data set. The training procedure must be interrupted manually, unless a maximum number of epochs has been specified.
+
+Note, that the data set must be preprocessed using the `prep` procedure. The `train` procedure will look for data sets named `train` and `validation`; if other names were chosen during preprocessing, they must be specified. 
+
+Usage for `train`:
+```
+```
+
+Important arguments:
+```
+```
+
+#### test
+The `test` procedure tests the specified network on the given data set.
+
+Note, that the data set must be preprocessed using the `prep` procedure. The `test` procedure will look for a data set named `test`; if another name was chosen during preprocessing, it must be specified. 
+
+Usage for `train`:
+```
+```
+
+Important arguments:
+```
+```
+
+#### eval
+
+#### prep
+The `prep` procedure preprocesses the given raw data, constructing a preprocessed data set. The data set will be named using the given filename, unless another name is given using `-n`.
+
+The procedure preprocesses the data and splits it into smaller sets. Per default, the procedure splits the data in three sets named `train` (50%), `validation` (20%) and `test` (30%). These sets can be used in the other procedures.
+
+If another data set with the specified name exists, it will be overwritten.
+
+When preprocessing the data set, a data set preprocessing profile may be specified, otherwise the one from the config file will be used (see above).
+
+Usage for `train`:
+```
+```
+
+Important arguments:
+```
 ```
 
 ### Example
