@@ -7,7 +7,7 @@ from .evaluate import evaluate as run_eval
 if __name__ == "__main__":
     config = util.get_config()
 
-    parser = argparse.ArgumentParser(description='Computing writing style similarity using deep learning.')
+    parser = argparse.ArgumentParser(prog='sim',description='Computing writing style similarity using deep learning.')
     
     subparser = parser.add_subparsers(dest='command')
 

@@ -7,7 +7,7 @@ from .predict import predict as run_predict
 if __name__ == "__main__":
     config = util.get_config()
 
-    parser = argparse.ArgumentParser(description='Clustering and prediction of writing style development.')
+    parser = argparse.ArgumentParser(prog='ws',description='Clustering and prediction of writing style development.')
     
     subparser = parser.add_subparsers(dest='command')
 

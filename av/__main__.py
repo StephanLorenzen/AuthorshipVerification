@@ -6,7 +6,7 @@ from .combine import test as run_test
 if __name__ == "__main__":
     config = util.get_config()
 
-    parser = argparse.ArgumentParser(description='Catching Ghost Writers, YO!')
+    parser = argparse.ArgumentParser(prog='av',description='Catching Ghost Writers, YO!')
     
     subparser = parser.add_subparsers(dest='command')
 
